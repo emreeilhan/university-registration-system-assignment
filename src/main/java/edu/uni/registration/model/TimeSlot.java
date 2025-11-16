@@ -19,7 +19,7 @@ public class TimeSlot implements Comparable<TimeSlot> {
             throw new IllegalArgumentException("End time cannot be null");
         }
         if (!start.isBefore(end)) {
-            throw new IllegalArgumentException("Start time cannot be before end time");
+            throw new IllegalArgumentException("Start time must be before end time");
         }
         this.dayOfWeek = dayOfWeek;
         this.start = start;
