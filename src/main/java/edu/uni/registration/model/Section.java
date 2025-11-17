@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Collection;
 
-public class Section {
+public class Section implements Schedulable {
     private final String id;
     private final Course course;
     private final String term;
