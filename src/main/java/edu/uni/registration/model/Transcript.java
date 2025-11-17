@@ -34,7 +34,11 @@ public class Transcript {
     public int getTotalCredits(){
         int total = 0;
         for(TranscriptEntry entry : entries){
-            total += entry.getCredits();
+            Grade g = entry.getGrade();
+            // Exclude entries that should not count towards GPA/credits (e.g., I/W)
+            if (g != null && g.countsTowardsGpa()) {
+                total += entry.getCredits();
+            }
         }
         return total;
     }
@@ -42,7 +46,10 @@ public class Transcript {
     public double getTotalQualityPoints(){
         double total = 0;
         for(TranscriptEntry entry : entries){
-            total += entry.getQualityPoints();
+            Grade g = entry.getGrade();
+            if (g != null && g.countsTowardsGpa()) {
+                total += entry.getQualityPoints();
+            }
         }
         return total;
     }
