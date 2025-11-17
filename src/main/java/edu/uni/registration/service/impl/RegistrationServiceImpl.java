@@ -1,22 +1,23 @@
-package edu.uni.registration.repository;
+package edu.uni.registration.service.impl;
 
 import edu.uni.registration.model.*;
 import edu.uni.registration.model.Enrollment.EnrollmentStatus;
 import edu.uni.registration.validation.PrerequisiteValidator;
 import edu.uni.registration.service.RegistrationService;
+import edu.uni.registration.repository.*;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-public class RegistrationService implements RegistrationService {
+public class RegistrationServiceImpl implements RegistrationService {
 
     private final StudentRepository studentRepository;
     private final SectionRepository sectionRepository;
     private final PrerequisiteValidator prerequisiteValidator;
     private final TranscriptRepository transcriptRepository;
 
-    public RegistrationService(StudentRepository studentRepository,
+    public RegistrationServiceImpl(StudentRepository studentRepository,
                                SectionRepository sectionRepository,PrerequisiteValidator prerequisiteValidator, TranscriptRepository transcriptRepository) {
         if (studentRepository == null || sectionRepository == null  || prerequisiteValidator == null || transcriptRepository == null) {
             throw new IllegalArgumentException("Repositories cannot be null");
@@ -27,11 +28,11 @@ public class RegistrationService implements RegistrationService {
         this.transcriptRepository = transcriptRepository;
     }
 
+    @Override
     public Enrollment enrollStudentInSection(String studentId, String sectionId) {
         Student student = findStudentOrThrow(studentId);
         Section section = findSectionOrThrow(sectionId);
 
-        // time conflict
         Section conflicting = findFirstConflictSection(student, section);
         if (conflicting != null) {
             throw new IllegalStateException(
@@ -58,6 +59,7 @@ public class RegistrationService implements RegistrationService {
         return enrollment;
     }
 
+    @Override
     public void dropStudentInSection(String studentId, String sectionId) {
         Student student = findStudentOrThrow(studentId);
         Section section = findSectionOrThrow(sectionId);
@@ -91,6 +93,7 @@ public class RegistrationService implements RegistrationService {
         }
     }
 
+    @Override
     public List<Section> getCurrentSchedule(String studentId, String term) {
         Student student = findStudentOrThrow(studentId);
         List<Section> allSections = sectionRepository.findAll();
@@ -173,3 +176,4 @@ public class RegistrationService implements RegistrationService {
         return null;
     }
 }
+
