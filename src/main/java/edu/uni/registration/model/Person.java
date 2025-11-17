@@ -14,6 +14,9 @@ public abstract class Person {
         this.email = email;
     }
 
+    
+    public abstract String role();
+
     // Getters and Setters
     public String getId() {
         return id;

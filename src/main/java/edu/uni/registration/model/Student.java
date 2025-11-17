@@ -10,6 +10,12 @@ public class Student extends Person {
         this.year = year;
     }
 
+  
+    @Override
+    public String role() {
+        return "STUDENT";
+    }
+
     //Getter methods
     public String getMajor() {
         return major;

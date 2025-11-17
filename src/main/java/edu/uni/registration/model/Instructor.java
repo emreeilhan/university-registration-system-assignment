@@ -11,6 +11,12 @@ public class Instructor extends Person {
         this.officeNumber = officeNumber;
     }
 
+    
+    @Override
+    public String role() {
+        return "INSTRUCTOR";
+    }
+
     // Getter methods
     public String getDepartment() {
         return department;
