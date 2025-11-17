@@ -1,13 +1,21 @@
 package edu.uni.registration.model;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 public class Student extends Person {
     private String major;
     private int year;
+    private final Transcript transcript;
+    private final List<Enrollment> currentEnrollments;
 
     public Student(String id,String firstName,String lastName,String email,String major,int year) {
         super(id,firstName,lastName,email);
         this.major = major;
         this.year = year;
+        this.transcript = new Transcript(this);
+        this.currentEnrollments = new ArrayList<>();
     }
 
   
@@ -25,6 +33,15 @@ public class Student extends Person {
         return year;
     }
 
+    public Transcript getTranscript() {
+        return transcript;
+    }
+
+    
+    public List<Enrollment> getCurrentEnrollments() {
+        return Collections.unmodifiableList(currentEnrollments);
+    }
+
     //Setter methods
     public void setMajor(String major) {
         this.major = major;
@@ -34,10 +51,27 @@ public class Student extends Person {
         this.year = year;
     }
 
+    
+    public void addEnrollment(Enrollment enrollment) {
+        if (enrollment == null) {
+            throw new IllegalArgumentException("Enrollment cannot be null");
+        }
+    
+        currentEnrollments.add(enrollment);
+    }
+
+    public boolean removeEnrollment(Enrollment enrollment) {
+        if (enrollment == null) {
+            return false;
+        }
+        return currentEnrollments.remove(enrollment);
+    }
+
     @Override
     public String toString() {
         return super.toString() +
                 ", Major: " + major +
-                ", Year: " + year;
+                ", Year: " + year +
+                ", ActiveEnrollments: " + currentEnrollments.size();
     }
 }
