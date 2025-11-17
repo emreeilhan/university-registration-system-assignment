@@ -21,10 +21,10 @@ public class StudentRepository implements Repository<Student,String> {
     @Override
     public Student save(Student student) {
         if(student == null){
-            throw new NullPointerException("Student cannot be null");
+            throw new IllegalArgumentException("Student cannot be null");
         }
         if(student.getId() == null || student.getId().isBlank()){
-            throw new NullPointerException("Student ID cannot be null");
+            throw new IllegalArgumentException("Student ID cannot be null");
         }
         storage.put(student.getId(),student);
         return student;
