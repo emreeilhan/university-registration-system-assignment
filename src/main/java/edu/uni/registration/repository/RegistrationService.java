@@ -1,10 +1,7 @@
 package edu.uni.registration.repository;
 
-import edu.uni.registration.model.Enrollment;
+import edu.uni.registration.model.*;
 import edu.uni.registration.model.Enrollment.EnrollmentStatus;
-import edu.uni.registration.model.Section;
-import edu.uni.registration.model.Student;
-import edu.uni.registration.model.TimeSlot;
 import edu.uni.registration.validation.PrerequisiteValidator;
 
 import java.util.ArrayList;
@@ -15,14 +12,18 @@ public class RegistrationService {
 
     private final StudentRepository studentRepository;
     private final SectionRepository sectionRepository;
+    private final PrerequisiteValidator prerequisiteValidator;
+    private final TranscriptRepository transcriptRepository;
 
     public RegistrationService(StudentRepository studentRepository,
-                               SectionRepository sectionRepository) {
-        if (studentRepository == null || sectionRepository == null) {
+                               SectionRepository sectionRepository,PrerequisiteValidator prerequisiteValidator) {
+        if (studentRepository == null || sectionRepository == null  || prerequisiteValidator == null) {
             throw new IllegalArgumentException("Repositories cannot be null");
         }
+        this.
         this.studentRepository = studentRepository;
         this.sectionRepository = sectionRepository;
+        this.prerequisiteValidator = prerequisiteValidator;
     }
 
     // ============================
@@ -49,7 +50,8 @@ public class RegistrationService {
         } else {
             enrollment.setStatus(EnrollmentStatus.ENROLLED);
         }
-
+        Transcript transcript = transcriptRepository.findById(student.getId())
+                .orElseThrow(() -> new IllegalStateException("Transcript not found for student: " + student.getId()));
         if (!prereqValidator.hasCompletedPrerequisites(transcript, section.getCourse())) {
             throw new IllegalStateException("Student has not completed prerequisites.");
         }
