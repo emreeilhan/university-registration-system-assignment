@@ -9,6 +9,13 @@ public class Admin extends Person {
     public String role() {
         return "ADMIN";
     }
+    
+    @Override
+    public String displayProfile() {
+        return String.format("Admin Profile: %s\nRole: System Administrator\nPermissions: Full Access",
+                getFullName());
+    }
+    
     @Override
     public String toString() {
         return "Admin -> " + super.toString();

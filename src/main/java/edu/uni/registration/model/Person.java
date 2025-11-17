@@ -16,6 +16,8 @@ public abstract class Person {
 
     
     public abstract String role();
+    
+    public abstract String displayProfile();
 
     // Getters and Setters
     public String getId() {

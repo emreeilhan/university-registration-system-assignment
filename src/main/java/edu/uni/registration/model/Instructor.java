@@ -22,6 +22,15 @@ public class Instructor extends Person {
     public String role() {
         return "INSTRUCTOR";
     }
+    
+    @Override
+    public String displayProfile() {
+        return String.format("Instructor Profile: %s\nDepartment: %s\nOffice: %s\nAssigned Sections: %d",
+                getFullName(),
+                department,
+                officeNumber,
+                assignedSections.size());
+    }
 
     // Getter methods
     public String getDepartment() {
