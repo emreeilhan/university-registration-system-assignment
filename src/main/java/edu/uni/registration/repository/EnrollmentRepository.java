@@ -50,7 +50,7 @@ public class EnrollmentRepository implements Repository<Enrollment, String> {
         storage.remove(key);
     }
 
-    // Helper queries
+    
     public Optional<Enrollment> findByStudentAndSection(Student student, Section section) {
         if (student == null || section == null) {
             return Optional.empty();

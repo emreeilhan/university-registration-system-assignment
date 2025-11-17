@@ -3,12 +3,13 @@ package edu.uni.registration.repository;
 import edu.uni.registration.model.*;
 import edu.uni.registration.model.Enrollment.EnrollmentStatus;
 import edu.uni.registration.validation.PrerequisiteValidator;
+import edu.uni.registration.service.RegistrationService;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-public class RegistrationService {
+public class RegistrationService implements RegistrationService {
 
     private final StudentRepository studentRepository;
     private final SectionRepository sectionRepository;
@@ -16,19 +17,16 @@ public class RegistrationService {
     private final TranscriptRepository transcriptRepository;
 
     public RegistrationService(StudentRepository studentRepository,
-                               SectionRepository sectionRepository,PrerequisiteValidator prerequisiteValidator) {
-        if (studentRepository == null || sectionRepository == null  || prerequisiteValidator == null) {
+                               SectionRepository sectionRepository,PrerequisiteValidator prerequisiteValidator, TranscriptRepository transcriptRepository) {
+        if (studentRepository == null || sectionRepository == null  || prerequisiteValidator == null || transcriptRepository == null) {
             throw new IllegalArgumentException("Repositories cannot be null");
         }
-        this.
         this.studentRepository = studentRepository;
         this.sectionRepository = sectionRepository;
         this.prerequisiteValidator = prerequisiteValidator;
+        this.transcriptRepository = transcriptRepository;
     }
 
-    // ============================
-    // ENROLL
-    // ============================
     public Enrollment enrollStudentInSection(String studentId, String sectionId) {
         Student student = findStudentOrThrow(studentId);
         Section section = findSectionOrThrow(sectionId);
@@ -52,7 +50,7 @@ public class RegistrationService {
         }
         Transcript transcript = transcriptRepository.findById(student.getId())
                 .orElseThrow(() -> new IllegalStateException("Transcript not found for student: " + student.getId()));
-        if (!prereqValidator.hasCompletedPrerequisites(transcript, section.getCourse())) {
+        if (!prerequisiteValidator.hasCompletedPrerequisites(transcript, section.getCourse())) {
             throw new IllegalStateException("Student has not completed prerequisites.");
         }
 
@@ -60,9 +58,6 @@ public class RegistrationService {
         return enrollment;
     }
 
-    // ============================
-    // DROP
-    // ============================
     public void dropStudentInSection(String studentId, String sectionId) {
         Student student = findStudentOrThrow(studentId);
         Section section = findSectionOrThrow(sectionId);
@@ -81,7 +76,7 @@ public class RegistrationService {
 
         target.setStatus(EnrollmentStatus.DROPPED);
 
-        // promote first waitlisted
+        
         Enrollment waitlisted = null;
 
         for (Enrollment e : section.getRoster()) {
@@ -96,9 +91,6 @@ public class RegistrationService {
         }
     }
 
-    // ============================
-    // GET CURRENT SCHEDULE
-    // ============================
     public List<Section> getCurrentSchedule(String studentId, String term) {
         Student student = findStudentOrThrow(studentId);
         List<Section> allSections = sectionRepository.findAll();
@@ -128,9 +120,7 @@ public class RegistrationService {
         return result;
     }
 
-    // ============================
-    // HELPERS
-    // ============================
+    
 
     private Student findStudentOrThrow(String studentId) {
         if (studentId == null || studentId.isBlank()) {

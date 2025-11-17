@@ -2,7 +2,7 @@ package edu.uni.registration.model;
 
 public abstract class Person {
 
-    private String id;
+    private final String id;
     private String firstName;
     private String lastName;
     private String email;
@@ -20,10 +20,6 @@ public abstract class Person {
     // Getters and Setters
     public String getId() {
         return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
     }
 
     public String getFirstName() {

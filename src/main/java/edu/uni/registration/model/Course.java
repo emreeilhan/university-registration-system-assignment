@@ -12,6 +12,9 @@ public class Course {
     private List<String> prerequisites;
 
     public Course(String code, String title, int credits) {
+        if (credits <= 0) {
+            throw new IllegalArgumentException("Credits must be positive");
+        }
         this.code = code;
         this.title = title;
         this.credits = credits;
@@ -42,6 +45,9 @@ public class Course {
         this.title = title;
     }
     public void setCredits(int credits) {
+        if (credits <= 0) {
+            throw new IllegalArgumentException("Credits must be positive");
+        }
         this.credits = credits;
     }
 
