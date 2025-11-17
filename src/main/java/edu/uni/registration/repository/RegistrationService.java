@@ -5,6 +5,7 @@ import edu.uni.registration.model.Enrollment.EnrollmentStatus;
 import edu.uni.registration.model.Section;
 import edu.uni.registration.model.Student;
 import edu.uni.registration.model.TimeSlot;
+import edu.uni.registration.validation.PrerequisiteValidator;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -47,6 +48,10 @@ public class RegistrationService {
             enrollment.setStatus(EnrollmentStatus.WAITLISTED);
         } else {
             enrollment.setStatus(EnrollmentStatus.ENROLLED);
+        }
+
+        if (!prereqValidator.hasCompletedPrerequisites(transcript, section.getCourse())) {
+            throw new IllegalStateException("Student has not completed prerequisites.");
         }
 
         section.addEnrollment(enrollment);
