@@ -23,6 +23,16 @@ public class Student extends Person {
     public String role() {
         return "STUDENT";
     }
+    
+    @Override
+    public String displayProfile() {
+        return String.format("Student Profile: %s\nMajor: %s\nYear: %d\nCurrent Enrollments: %d\nGPA: %.2f",
+                getFullName(),
+                major,
+                year,
+                currentEnrollments.size(),
+                transcript.getGpa());
+    }
 
     //Getter methods
     public String getMajor() {
