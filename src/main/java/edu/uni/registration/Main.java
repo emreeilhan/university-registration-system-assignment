@@ -1,6 +1,7 @@
 package edu.uni.registration;
 
 import edu.uni.registration.cli.CommandLineInterface;
+import edu.uni.registration.gui.SimpleGui;
 import edu.uni.registration.model.*;
 import edu.uni.registration.repository.*;
 import edu.uni.registration.service.*;
@@ -10,6 +11,9 @@ import edu.uni.registration.validation.*;
 import java.time.DayOfWeek;
 import java.time.LocalTime;
 import java.util.Arrays;
+import java.util.Scanner;
+
+import javax.swing.SwingUtilities;
 
 public class Main {
     public static void main(String[] args) {
@@ -35,12 +39,30 @@ public class Main {
             studentRepo, sectionRepo, enrollmentRepo, transcriptRepo
         );
 
-        // 4. Seed Data (Minimum Requirements: 6 courses, 10 sections, 6 students, 3 instructors, 1 admin)
+        // 4. Seed Data
         seedData(studentRepo, courseRepo, sectionRepo, personRepo, transcriptRepo);
 
-        // 5. Launch CLI
-        CommandLineInterface cli = new CommandLineInterface(regService, catalogService, gradingService);
-        cli.start();
+        // 5. Choose Interface (CLI or GUI)
+        System.out.println("Choose mode: 1 for CLI, 2 for GUI");
+        // Simple check to allow user to choose mode
+        Scanner sc = new Scanner(System.in);
+        // Use hasNextLine to avoid blocking if run non-interactively
+        if (sc.hasNextLine()) {
+            String mode = sc.nextLine();
+            if ("2".equals(mode)) {
+                System.out.println("Launching GUI...");
+                SwingUtilities.invokeLater(() -> {
+                    new SimpleGui(regService, catalogService).setVisible(true);
+                });
+            } else {
+                CommandLineInterface cli = new CommandLineInterface(regService, catalogService, gradingService);
+                cli.start();
+            }
+        } else {
+            // Default to CLI if no input available
+             CommandLineInterface cli = new CommandLineInterface(regService, catalogService, gradingService);
+             cli.start();
+        }
     }
 
     private static void seedData(StudentRepository sRepo, CourseRepository cRepo, SectionRepository secRepo, PersonRepository pRepo, TranscriptRepository tRepo) {
