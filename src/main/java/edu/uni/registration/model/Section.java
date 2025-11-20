@@ -13,6 +13,8 @@ public class Section implements Schedulable {
     private Instructor instructor;
     private int capacity;
 
+    private int waitlistCapacity = 10; // Default waitlist capacity
+
     private final List<TimeSlot> meetingTimes;
     private final List<Enrollment> roster;
 
@@ -23,6 +25,14 @@ public class Section implements Schedulable {
         this.capacity = capacity;
         this.meetingTimes = new ArrayList<>();
         this.roster = new ArrayList<>();
+    }
+
+    public void setWaitlistCapacity(int waitlistCapacity) {
+        this.waitlistCapacity = waitlistCapacity;
+    }
+
+    public int getWaitlistCapacity() {
+        return waitlistCapacity;
     }
 
     //Getter methods
@@ -64,7 +74,17 @@ public class Section implements Schedulable {
 
     //Helper methods
     public boolean isFull() {
-        return roster.size() >= capacity;
+        long enrolledCount = roster.stream()
+                .filter(e -> e.getStatus() == Enrollment.EnrollmentStatus.ENROLLED)
+                .count();
+        return enrolledCount >= capacity;
+    }
+
+    public boolean isWaitlistFull() {
+        long waitlistedCount = roster.stream()
+                .filter(e -> e.getStatus() == Enrollment.EnrollmentStatus.WAITLISTED)
+                .count();
+        return waitlistedCount >= waitlistCapacity;
     }
 
     public  void addMeetingTime(TimeSlot timeSlot) {
