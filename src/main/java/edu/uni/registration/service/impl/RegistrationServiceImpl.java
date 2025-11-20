@@ -5,6 +5,7 @@ import edu.uni.registration.model.Enrollment.EnrollmentStatus;
 import edu.uni.registration.validation.PrerequisiteValidator;
 import edu.uni.registration.service.RegistrationService;
 import edu.uni.registration.repository.*;
+import edu.uni.registration.util.AdminOverrideLog;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,16 +17,20 @@ public class RegistrationServiceImpl implements RegistrationService {
     private final SectionRepository sectionRepository;
     private final PrerequisiteValidator prerequisiteValidator;
     private final TranscriptRepository transcriptRepository;
+    private final PersonRepository personRepository;
+    private final List<AdminOverrideLog> overrideLogs;
 
     public RegistrationServiceImpl(StudentRepository studentRepository,
-                               SectionRepository sectionRepository,PrerequisiteValidator prerequisiteValidator, TranscriptRepository transcriptRepository) {
-        if (studentRepository == null || sectionRepository == null  || prerequisiteValidator == null || transcriptRepository == null) {
+                               SectionRepository sectionRepository,PrerequisiteValidator prerequisiteValidator, TranscriptRepository transcriptRepository, PersonRepository personRepository) {
+        if (studentRepository == null || sectionRepository == null  || prerequisiteValidator == null || transcriptRepository == null || personRepository == null) {
             throw new IllegalArgumentException("Repositories cannot be null");
         }
         this.studentRepository = studentRepository;
         this.sectionRepository = sectionRepository;
         this.prerequisiteValidator = prerequisiteValidator;
         this.transcriptRepository = transcriptRepository;
+        this.personRepository = personRepository;
+        this.overrideLogs = new ArrayList<>();
     }
 
     @Override
@@ -174,6 +179,36 @@ public class RegistrationServiceImpl implements RegistrationService {
         }
 
         return null;
+    }
+
+    @Override
+    public Enrollment adminOverrideEnroll(String studentId, String sectionId, String adminId, String reason) {
+        if (adminId == null || adminId.isBlank()) {
+            throw new IllegalArgumentException("Admin ID cannot be null");
+        }
+        personRepository.findById(adminId).orElseThrow(() -> new IllegalArgumentException("Admin not found: " + adminId));
+        
+        Student student = findStudentOrThrow(studentId);
+        Section section = findSectionOrThrow(sectionId);
+        
+        Enrollment enrollment = new Enrollment(student, section);
+        enrollment.setStatus(EnrollmentStatus.ENROLLED);
+        section.addEnrollment(enrollment);
+        
+        AdminOverrideLog log = new AdminOverrideLog(
+            adminId,
+            "ENROLLMENT_OVERRIDE: Student " + studentId + " enrolled in " + sectionId,
+            sectionId,
+            reason != null ? reason : "No reason provided"
+        );
+        overrideLogs.add(log);
+        System.out.println(log);
+        
+        return enrollment;
+    }
+
+    public List<AdminOverrideLog> getOverrideLogs() {
+        return new ArrayList<>(overrideLogs);
     }
 }
 
