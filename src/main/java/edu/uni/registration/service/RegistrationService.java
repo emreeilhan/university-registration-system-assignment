@@ -9,6 +9,7 @@ public interface RegistrationService {
     Enrollment enrollStudentInSection(String studentId, String sectionId);
     void dropStudentInSection(String studentId, String sectionId);
     List<Section> getCurrentSchedule(String studentId, String term);
+    Enrollment adminOverrideEnroll(String studentId, String sectionId, String adminId, String reason);
 }
 
 
