@@ -2,14 +2,15 @@ package edu.uni.registration.service;
 
 import edu.uni.registration.model.Enrollment;
 import edu.uni.registration.model.Section;
+import edu.uni.registration.util.Result;
 
 import java.util.List;
 
 public interface RegistrationService {
-    Enrollment enrollStudentInSection(String studentId, String sectionId);
-    void dropStudentInSection(String studentId, String sectionId);
-    List<Section> getCurrentSchedule(String studentId, String term);
-    Enrollment adminOverrideEnroll(String studentId, String sectionId, String adminId, String reason);
+    Result<Enrollment> enrollStudentInSection(String studentId, String sectionId);
+    Result<Void> dropStudentInSection(String studentId, String sectionId);
+    Result<List<Section>> getCurrentSchedule(String studentId, String term);
+    Result<Enrollment> adminOverrideEnroll(String studentId, String sectionId, String adminId, String reason);
 }
 
 

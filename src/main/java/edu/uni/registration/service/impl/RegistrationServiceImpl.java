@@ -6,6 +6,7 @@ import edu.uni.registration.validation.PrerequisiteValidator;
 import edu.uni.registration.service.RegistrationService;
 import edu.uni.registration.repository.*;
 import edu.uni.registration.util.AdminOverrideLog;
+import edu.uni.registration.util.Result;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,73 +35,108 @@ public class RegistrationServiceImpl implements RegistrationService {
     }
 
     @Override
-    public Enrollment enrollStudentInSection(String studentId, String sectionId) {
-        Student student = findStudentOrThrow(studentId);
-        Section section = findSectionOrThrow(sectionId);
+    public Result<Enrollment> enrollStudentInSection(String studentId, String sectionId) {
+        if (studentId == null || sectionId == null) {
+            return Result.fail("Student ID and Section ID cannot be null");
+        }
+
+        Optional<Student> studentOpt = studentRepository.findById(studentId);
+        if (studentOpt.isEmpty()) {
+            return Result.fail("Student not found: " + studentId);
+        }
+        Student student = studentOpt.get();
+
+        Optional<Section> sectionOpt = sectionRepository.findById(sectionId);
+        if (sectionOpt.isEmpty()) {
+            return Result.fail("Section not found: " + sectionId);
+        }
+        Section section = sectionOpt.get();
 
         Section conflicting = findFirstConflictSection(student, section);
         if (conflicting != null) {
-            throw new IllegalStateException(
-                    "Student " + studentId +
+            return Result.fail("Student " + studentId +
                             " has a time conflict between section " + sectionId +
-                            " and section " + conflicting.getId()
-            );
+                            " and section " + conflicting.getId());
         }
 
         Enrollment enrollment = new Enrollment(student, section);
 
         if (section.isFull()) {
+             if (section.isWaitlistFull()) {
+                 return Result.fail("Section and waitlist are full");
+             }
             enrollment.setStatus(EnrollmentStatus.WAITLISTED);
         } else {
             enrollment.setStatus(EnrollmentStatus.ENROLLED);
         }
-        Transcript transcript = transcriptRepository.findById(student.getId())
-                .orElseThrow(() -> new IllegalStateException("Transcript not found for student: " + student.getId()));
+        
+        Optional<Transcript> transcriptOpt = transcriptRepository.findById(student.getId());
+        if (transcriptOpt.isEmpty()) {
+             // Assuming every student should have a transcript, or creating one if missing
+             return Result.fail("Transcript not found for student: " + student.getId());
+        }
+        Transcript transcript = transcriptOpt.get();
+
         if (!prerequisiteValidator.hasCompletedPrerequisites(transcript, section.getCourse())) {
-            throw new IllegalStateException("Student has not completed prerequisites.");
+            return Result.fail("Student has not completed prerequisites.");
         }
 
         section.addEnrollment(enrollment);
-        return enrollment;
+        return Result.ok(enrollment);
     }
 
     @Override
-    public void dropStudentInSection(String studentId, String sectionId) {
-        Student student = findStudentOrThrow(studentId);
-        Section section = findSectionOrThrow(sectionId);
+    public Result<Void> dropStudentInSection(String studentId, String sectionId) {
+        if (studentId == null || sectionId == null) return Result.fail("IDs cannot be null");
+
+        Optional<Student> studentOpt = studentRepository.findById(studentId);
+        if (studentOpt.isEmpty()) return Result.fail("Student not found");
+        Student student = studentOpt.get();
+
+        Optional<Section> sectionOpt = sectionRepository.findById(sectionId);
+        if (sectionOpt.isEmpty()) return Result.fail("Section not found");
+        Section section = sectionOpt.get();
 
         Enrollment target = null;
 
         for (Enrollment e : section.getRoster()) {
             if (e.getStudent().getId().equals(student.getId()) &&
-                    e.getStatus() == EnrollmentStatus.ENROLLED) {
+                    (e.getStatus() == EnrollmentStatus.ENROLLED || e.getStatus() == EnrollmentStatus.WAITLISTED)) {
                 target = e;
                 break;
             }
         }
 
-        if (target == null) return;
+        if (target == null) {
+            return Result.fail("Student is not enrolled in this section");
+        }
 
         target.setStatus(EnrollmentStatus.DROPPED);
 
+        // Promote from waitlist if a seat opened and we dropped an ENROLLED student
+        if (target.getStatus() == EnrollmentStatus.DROPPED) { // Re-check status just to be safe
+             Enrollment waitlisted = null;
+             for (Enrollment e : section.getRoster()) {
+                 if (e.getStatus() == EnrollmentStatus.WAITLISTED) {
+                     waitlisted = e;
+                     break;
+                 }
+             }
+             if (waitlisted != null) {
+                 waitlisted.setStatus(EnrollmentStatus.ENROLLED);
+             }
+        }
         
-        Enrollment waitlisted = null;
-
-        for (Enrollment e : section.getRoster()) {
-            if (e.getStatus() == EnrollmentStatus.WAITLISTED) {
-                waitlisted = e;
-                break;
-            }
-        }
-
-        if (waitlisted != null) {
-            waitlisted.setStatus(EnrollmentStatus.ENROLLED);
-        }
+        return Result.ok(null);
     }
 
     @Override
-    public List<Section> getCurrentSchedule(String studentId, String term) {
-        Student student = findStudentOrThrow(studentId);
+    public Result<List<Section>> getCurrentSchedule(String studentId, String term) {
+        if (studentId == null) return Result.fail("Student ID cannot be null");
+        Optional<Student> studentOpt = studentRepository.findById(studentId);
+        if (studentOpt.isEmpty()) return Result.fail("Student not found");
+        Student student = studentOpt.get();
+
         List<Section> allSections = sectionRepository.findAll();
         List<Section> result = new ArrayList<>();
 
@@ -125,39 +161,14 @@ public class RegistrationServiceImpl implements RegistrationService {
                 result.add(section);
             }
         }
-        return result;
-    }
-
-    
-
-    private Student findStudentOrThrow(String studentId) {
-        if (studentId == null || studentId.isBlank()) {
-            throw new IllegalArgumentException("Student id cannot be null");
-        }
-        Optional<Student> opt = studentRepository.findById(studentId);
-        return opt.orElseThrow(
-                () -> new IllegalArgumentException("Student not found: " + studentId)
-        );
-    }
-
-    private Section findSectionOrThrow(String sectionId) {
-        if (sectionId == null || sectionId.isBlank()) {
-            throw new IllegalArgumentException("Section id cannot be null");
-        }
-        Optional<Section> opt = sectionRepository.findById(sectionId);
-        return opt.orElseThrow(
-                () -> new IllegalArgumentException("Section not found: " + sectionId)
-        );
+        return Result.ok(result);
     }
 
     private Section findFirstConflictSection(Student student, Section target) {
-
         List<Section> all = sectionRepository.findAll();
 
         for (Section existing : all) {
-
             boolean enrolledHere = false;
-
             for (Enrollment e : existing.getRoster()) {
                 if (e.getStudent().getId().equals(student.getId()) &&
                         e.getStatus() == EnrollmentStatus.ENROLLED) {
@@ -166,9 +177,9 @@ public class RegistrationServiceImpl implements RegistrationService {
                 }
             }
 
-            if (!enrolledHere)
-                continue;
+            if (!enrolledHere) continue;
 
+            // Check time conflict
             for (TimeSlot a : existing.getMeetingTimes()) {
                 for (TimeSlot b : target.getMeetingTimes()) {
                     if (a.overlaps(b)) {
@@ -177,19 +188,26 @@ public class RegistrationServiceImpl implements RegistrationService {
                 }
             }
         }
-
         return null;
     }
 
     @Override
-    public Enrollment adminOverrideEnroll(String studentId, String sectionId, String adminId, String reason) {
+    public Result<Enrollment> adminOverrideEnroll(String studentId, String sectionId, String adminId, String reason) {
         if (adminId == null || adminId.isBlank()) {
-            throw new IllegalArgumentException("Admin ID cannot be null");
+            return Result.fail("Admin ID cannot be null");
         }
-        personRepository.findById(adminId).orElseThrow(() -> new IllegalArgumentException("Admin not found: " + adminId));
+        if (personRepository.findById(adminId).isEmpty()) {
+            return Result.fail("Admin not found: " + adminId);
+        }
         
-        Student student = findStudentOrThrow(studentId);
-        Section section = findSectionOrThrow(sectionId);
+        Optional<Student> sOpt = studentRepository.findById(studentId);
+        if (sOpt.isEmpty()) return Result.fail("Student not found");
+        
+        Optional<Section> secOpt = sectionRepository.findById(sectionId);
+        if (secOpt.isEmpty()) return Result.fail("Section not found");
+        
+        Student student = sOpt.get();
+        Section section = secOpt.get();
         
         Enrollment enrollment = new Enrollment(student, section);
         enrollment.setStatus(EnrollmentStatus.ENROLLED);
@@ -202,13 +220,11 @@ public class RegistrationServiceImpl implements RegistrationService {
             reason != null ? reason : "No reason provided"
         );
         overrideLogs.add(log);
-        System.out.println(log);
         
-        return enrollment;
+        return Result.ok(enrollment);
     }
 
     public List<AdminOverrideLog> getOverrideLogs() {
         return new ArrayList<>(overrideLogs);
     }
 }
-

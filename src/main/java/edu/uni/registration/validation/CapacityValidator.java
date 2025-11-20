@@ -7,6 +7,11 @@ public class CapacityValidator {
         if (section == null) return false;
         return !section.isFull();
     }
+
+    public boolean hasWaitlistCapacity(Section section) {
+        if (section == null) return false;
+        return section.isFull() && !section.isWaitlistFull();
+    }
 }
 
 

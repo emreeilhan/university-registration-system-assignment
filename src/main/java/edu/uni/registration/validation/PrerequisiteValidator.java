@@ -8,6 +8,15 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class PrerequisiteValidator {
+
+    // Purpose: Overloaded method to support admin override for prerequisites.
+    public boolean hasCompletedPrerequisites(Transcript transcript, Course targetCourse, boolean adminOverride) {
+        if (adminOverride) {
+            return true;
+        }
+        return hasCompletedPrerequisites(transcript, targetCourse);
+    }
+
     public boolean hasCompletedPrerequisites(Transcript transcript ,Course targetCourse) {
         if(targetCourse.getPrerequisites().isEmpty()) {
             return true;

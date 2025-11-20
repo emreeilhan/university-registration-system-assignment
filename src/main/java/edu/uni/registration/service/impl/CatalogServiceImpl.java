@@ -3,16 +3,21 @@ package edu.uni.registration.service.impl;
 import edu.uni.registration.model.Course;
 import edu.uni.registration.model.Instructor;
 import edu.uni.registration.model.Section;
+import edu.uni.registration.model.TimeSlot;
 import edu.uni.registration.repository.CourseRepository;
 import edu.uni.registration.repository.SectionRepository;
 import edu.uni.registration.repository.PersonRepository;
 import edu.uni.registration.service.CatalogService;
 import edu.uni.registration.util.CourseQuery;
+import edu.uni.registration.util.Result;
 import edu.uni.registration.util.AdminOverrideLog;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class CatalogServiceImpl implements CatalogService {
     private final CourseRepository courseRepository;
@@ -31,83 +36,165 @@ public class CatalogServiceImpl implements CatalogService {
     }
 
     @Override
-    public List<Course> search(CourseQuery query) {
-        List<Course> all = courseRepository.findAll();
+    public Result<List<Course>> search(CourseQuery query) {
+        List<Course> allCourses = courseRepository.findAll();
         if (query == null) {
-            return all;
+            return Result.ok(allCourses);
         }
-        List<Course> result = new ArrayList<>();
-        for (Course c : all) {
-            boolean ok = true;
-            if (query.getCode() != null && !query.getCode().isBlank()) {
-                ok &= c.getCode() != null && c.getCode().toLowerCase(Locale.ROOT).contains(query.getCode().toLowerCase(Locale.ROOT));
+
+        // Basic filtering on Course fields
+        List<Course> filteredCourses = allCourses.stream()
+                .filter(c -> matchesCourseFields(c, query))
+                .collect(Collectors.toList());
+
+        // Advanced filtering (Instructor, Time) requires checking Sections
+        if (hasSectionCriteria(query)) {
+            Set<String> validCourseCodes = findCourseCodesMatchingSectionCriteria(query);
+            filteredCourses = filteredCourses.stream()
+                    .filter(c -> validCourseCodes.contains(c.getCode()))
+                    .collect(Collectors.toList());
+        }
+
+        return Result.ok(filteredCourses);
+    }
+
+    private boolean matchesCourseFields(Course c, CourseQuery query) {
+        boolean ok = true;
+        if (query.getCode() != null && !query.getCode().isBlank()) {
+            ok &= c.getCode() != null && c.getCode().toLowerCase(Locale.ROOT).contains(query.getCode().toLowerCase(Locale.ROOT));
+        }
+        if (query.getTitle() != null && !query.getTitle().isBlank()) {
+            ok &= c.getTitle() != null && c.getTitle().toLowerCase(Locale.ROOT).contains(query.getTitle().toLowerCase(Locale.ROOT));
+        }
+        if (query.getMinCredits() != null) {
+            ok &= c.getCredits() >= query.getMinCredits();
+        }
+        if (query.getMaxCredits() != null) {
+            ok &= c.getCredits() <= query.getMaxCredits();
+        }
+        return ok;
+    }
+
+    private boolean hasSectionCriteria(CourseQuery query) {
+        return (query.getInstructorName() != null && !query.getInstructorName().isBlank()) ||
+               query.getDayOfWeek() != null ||
+               query.getStartTime() != null ||
+               query.getEndTime() != null;
+    }
+
+    private Set<String> findCourseCodesMatchingSectionCriteria(CourseQuery query) {
+        List<Section> allSections = sectionRepository.findAll();
+        Set<String> matchingCourseCodes = new HashSet<>();
+
+        for (Section s : allSections) {
+            boolean matches = true;
+
+            // Check Instructor
+            if (query.getInstructorName() != null && !query.getInstructorName().isBlank()) {
+                if (s.getInstructor() == null || !s.getInstructor().getFullName().toLowerCase(Locale.ROOT)
+                        .contains(query.getInstructorName().toLowerCase(Locale.ROOT))) {
+                    matches = false;
+                }
             }
-            if (query.getTitle() != null && !query.getTitle().isBlank()) {
-                ok &= c.getTitle() != null && c.getTitle().toLowerCase(Locale.ROOT).contains(query.getTitle().toLowerCase(Locale.ROOT));
+
+            // Check Time Window
+            if (matches && (query.getDayOfWeek() != null || query.getStartTime() != null || query.getEndTime() != null)) {
+                boolean timeMatch = false;
+                for (TimeSlot slot : s.getMeetingTimes()) {
+                    boolean slotOk = true;
+                    if (query.getDayOfWeek() != null && slot.getDayOfWeek() != query.getDayOfWeek()) {
+                        slotOk = false;
+                    }
+                    // Check if slot is within the requested window
+                    if (query.getStartTime() != null && slot.getStart().isBefore(query.getStartTime())) {
+                         slotOk = false;
+                    }
+                    if (query.getEndTime() != null && slot.getEnd().isAfter(query.getEndTime())) {
+                         slotOk = false;
+                    }
+                    
+                    if (slotOk) {
+                        timeMatch = true;
+                        break;
+                    }
+                }
+                if (!timeMatch) {
+                    matches = false;
+                }
             }
-            if (query.getMinCredits() != null) {
-                ok &= c.getCredits() >= query.getMinCredits();
-            }
-            if (query.getMaxCredits() != null) {
-                ok &= c.getCredits() <= query.getMaxCredits();
-            }
-            if (ok) {
-                result.add(c);
+
+            if (matches) {
+                matchingCourseCodes.add(s.getCourse().getCode());
             }
         }
-        return result;
+        return matchingCourseCodes;
     }
 
     @Override
-    public Course createCourse(String code, String title, int credits) {
+    public Result<Course> createCourse(String code, String title, int credits) {
+        if (code == null || title == null) return Result.fail("Code and Title cannot be null");
+        if (credits <= 0) return Result.fail("Credits must be positive");
+        
         Course c = new Course(code, title, credits);
-        return courseRepository.save(c);
+        courseRepository.save(c);
+        return Result.ok(c);
     }
 
     @Override
-    public Section createSection(String id, Course course, String term, int capacity) {
+    public Result<Section> createSection(String id, Course course, String term, int capacity) {
+        if (id == null || course == null || term == null) return Result.fail("Section details cannot be null");
+        if (capacity < 0) return Result.fail("Capacity cannot be negative");
+        
         Section s = new Section(id, course, term, capacity);
-        return sectionRepository.save(s);
+        sectionRepository.save(s);
+        return Result.ok(s);
     }
 
     @Override
-    public void assignInstructor(String sectionId, Instructor instructor) {
-        Section s = sectionRepository.findById(sectionId).orElseThrow(() -> new IllegalArgumentException("Section not found: " + sectionId));
-        s.setInstructor(instructor);
-        if (instructor != null) {
-            instructor.addAssignedSection(s);
-        }
+    public Result<Void> assignInstructor(String sectionId, Instructor instructor) {
+        if (sectionId == null) return Result.fail("Section ID cannot be null");
+        
+        return sectionRepository.findById(sectionId)
+                .map(s -> {
+                    s.setInstructor(instructor);
+                    if (instructor != null) {
+                        instructor.addAssignedSection(s);
+                    }
+                    return Result.<Void>ok(null);
+                })
+                .orElse(Result.fail("Section not found: " + sectionId));
     }
 
     @Override
-    public void adminOverrideCapacity(String sectionId, int newCapacity, String adminId, String reason) {
+    public Result<Void> adminOverrideCapacity(String sectionId, int newCapacity, String adminId, String reason) {
         if (adminId == null || adminId.isBlank()) {
-            throw new IllegalArgumentException("Admin ID cannot be null");
+            return Result.fail("Admin ID cannot be null");
         }
-        personRepository.findById(adminId).orElseThrow(() -> new IllegalArgumentException("Admin not found: " + adminId));
-        
-        Section section = sectionRepository.findById(sectionId).orElseThrow(() -> new IllegalArgumentException("Section not found: " + sectionId));
-        
-        if (newCapacity < 0) {
-            throw new IllegalArgumentException("Capacity cannot be negative");
+        if (personRepository.findById(adminId).isEmpty()) {
+            return Result.fail("Admin not found: " + adminId);
         }
         
-        int oldCapacity = section.getCapacity();
-        section.setCapacity(newCapacity);
-        
-        AdminOverrideLog log = new AdminOverrideLog(
-            adminId,
-            "CAPACITY_OVERRIDE: " + oldCapacity + " -> " + newCapacity,
-            sectionId,
-            reason != null ? reason : "No reason provided"
-        );
-        overrideLogs.add(log);
-        System.out.println(log);
+        return sectionRepository.findById(sectionId)
+                .map(section -> {
+                    if (newCapacity < 0) {
+                        return Result.<Void>fail("Capacity cannot be negative");
+                    }
+                    int oldCapacity = section.getCapacity();
+                    section.setCapacity(newCapacity);
+
+                    AdminOverrideLog log = new AdminOverrideLog(
+                            adminId,
+                            "CAPACITY_OVERRIDE: " + oldCapacity + " -> " + newCapacity,
+                            sectionId,
+                            reason != null ? reason : "No reason provided"
+                    );
+                    overrideLogs.add(log);
+                    return Result.<Void>ok(null);
+                })
+                .orElse(Result.fail("Section not found: " + sectionId));
     }
 
     public List<AdminOverrideLog> getOverrideLogs() {
         return new ArrayList<>(overrideLogs);
     }
 }
-
-
