@@ -64,4 +64,12 @@ public interface CatalogService {
      * @return A Result indicating success or failure.
      */
     Result<Void> adminOverrideCapacity(String sectionId, int newCapacity, String adminId, String reason);
+
+    /**
+     * Retrieves the list of sections assigned to a specific instructor.
+     *
+     * @param instructorId The ID of the instructor.
+     * @return A Result containing the list of sections.
+     */
+    Result<List<Section>> getInstructorSections(String instructorId);
 }

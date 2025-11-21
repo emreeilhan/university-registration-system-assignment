@@ -175,7 +175,7 @@ public class Main {
         sec9.setInstructor(i3); i3.addAssignedSection(sec9);
 
         // Section with limited capacity to test Waitlist
-        Section sec10 = new Section("CS101-SMALL", cs101, "Spring 2024", 1); // Capacity 1!
+        Section sec10 = new Section("CS101-SMALL", cs101, "Spring 2024", 1); // Capacity 1
         sec10.setWaitlistCapacity(2);
         sec10.setInstructor(i3); i3.addAssignedSection(sec10);
 

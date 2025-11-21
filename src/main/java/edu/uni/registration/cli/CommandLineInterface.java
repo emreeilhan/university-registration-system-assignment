@@ -151,10 +151,103 @@ public class CommandLineInterface {
     }
 
     private void instructorMenu() {
-        System.out.println("\n=== INSTRUCTOR MENU (" + currentUserId + ") ===");
-        System.out.println("Not fully implemented in this demo.");
-        System.out.println("Press enter to return.");
-        scanner.nextLine();
+        while (true) {
+            System.out.println("\n=== INSTRUCTOR MENU (" + currentUserId + ") ===");
+            System.out.println("1. List My Sections");
+            System.out.println("2. View Roster of Section");
+            System.out.println("3. Post Grade");
+            System.out.println("0. Logout");
+            System.out.print("Select action: ");
+
+            String choice = scanner.nextLine();
+            if (choice.equals("0")) break;
+
+            switch (choice) {
+                case "1":
+                    listInstructorSections();
+                    break;
+                case "2":
+                    viewSectionRoster();
+                    break;
+                case "3":
+                    postGradeForStudent();
+                    break;
+                default:
+                    System.out.println("Invalid option.");
+            }
+        }
+    }
+
+    private void listInstructorSections() {
+        Result<List<Section>> res = catalogService.getInstructorSections(currentUserId);
+        if (res.isOk()) {
+            List<Section> sections = res.get();
+            if (sections.isEmpty()) {
+                System.out.println("No sections assigned.");
+            } else {
+                System.out.println("Assigned Sections:");
+                for (Section s : sections) {
+                    System.out.printf(" - %s: %s (%s) [%d/%d students]%n",
+                            s.getId(), s.getCourse().getTitle(), s.getTerm(),
+                            s.getRoster().size(), s.getCapacity());
+                }
+            }
+        } else {
+            System.out.println("Error: " + res.getError());
+        }
+    }
+
+    private void viewSectionRoster() {
+        System.out.print("Enter Section ID: ");
+        String sectionId = scanner.nextLine();
+        
+        Result<List<Section>> res = catalogService.getInstructorSections(currentUserId);
+        if (res.isOk()) {
+            Section target = res.get().stream()
+                    .filter(s -> s.getId().equals(sectionId))
+                    .findFirst()
+                    .orElse(null);
+
+            if (target != null) {
+                System.out.println("Roster for " + target.getId() + ":");
+                List<Enrollment> roster = target.getRoster();
+                if (roster.isEmpty()) {
+                    System.out.println("  (No students enrolled)");
+                } else {
+                    for (Enrollment e : roster) {
+                        Student s = e.getStudent();
+                        System.out.printf("  - %s (%s): %s [Grade: %s]%n",
+                                s.getId(), s.getFullName(), e.getStatus(),
+                                e.getGrade().map(Grade::toString).orElse("N/A"));
+                    }
+                }
+            } else {
+                System.out.println("Section not found or not assigned to you.");
+            }
+        } else {
+             System.out.println("Error: " + res.getError());
+        }
+    }
+
+    private void postGradeForStudent() {
+        System.out.print("Enter Section ID: ");
+        String sectionId = scanner.nextLine();
+        System.out.print("Enter Student ID: ");
+        String studentId = scanner.nextLine();
+        System.out.print("Enter Grade (A, B, C, D, F, I, W): ");
+        String gradeStr = scanner.nextLine();
+
+        try {
+            Grade grade = Grade.valueOf(gradeStr.toUpperCase());
+            Result<Void> res = gradingService.postGrade(currentUserId, sectionId, studentId, grade);
+            if (res.isOk()) {
+                System.out.println("Grade posted successfully.");
+            } else {
+                System.out.println("Error: " + res.getError());
+            }
+        } catch (IllegalArgumentException e) {
+            System.out.println("Invalid grade format.");
+        }
     }
 
     private void adminMenu() {

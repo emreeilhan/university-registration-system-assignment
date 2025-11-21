@@ -23,7 +23,7 @@ public abstract class Person {
     public String getId() {
         return id;
     }
-
+    
     public String getFirstName() {
         return firstName;
     }

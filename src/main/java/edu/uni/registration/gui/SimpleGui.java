@@ -223,9 +223,7 @@ public class SimpleGui extends JFrame {
             return;
         }
         
-        // Simplified: In a real app, selecting a Course would show available Sections.
-        // Here, for the demo, we ask user to type Section ID manually or assume auto-match.
-        // To keep it robust, let's ask for Section ID via input dialog.
+    
         
         String sectionId = JOptionPane.showInputDialog(this, "Enter Section ID to enroll (e.g. CS101-01):");
         if (sectionId != null && !sectionId.isBlank()) {

@@ -2,6 +2,7 @@ package edu.uni.registration.service.impl;
 
 import edu.uni.registration.model.Course;
 import edu.uni.registration.model.Instructor;
+import edu.uni.registration.model.Person;
 import edu.uni.registration.model.Section;
 import edu.uni.registration.model.TimeSlot;
 import edu.uni.registration.repository.CourseRepository;
@@ -192,6 +193,22 @@ public class CatalogServiceImpl implements CatalogService {
                     return Result.<Void>ok(null);
                 })
                 .orElse(Result.fail("Section not found: " + sectionId));
+    }
+
+    @Override
+    public Result<List<Section>> getInstructorSections(String instructorId) {
+        if (instructorId == null || instructorId.isBlank()) {
+            return Result.fail("Instructor ID cannot be null");
+        }
+        return personRepository.findById(instructorId)
+                .map(person -> {
+                    if (person instanceof Instructor) {
+                        return Result.ok(((Instructor) person).getAssignedSections());
+                    } else {
+                        return Result.<List<Section>>fail("User is not an instructor");
+                    }
+                })
+                .orElse(Result.fail("Instructor not found"));
     }
 
     public List<AdminOverrideLog> getOverrideLogs() {
