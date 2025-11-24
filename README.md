@@ -60,12 +60,6 @@ mvn test
 ```
 *(Or run via your IDE's test runner)*
 
-## Design Decisions
-
-- **Result Pattern:** Instead of cluttering logic with `try-catch` blocks, service methods return a `Result<T>` object that encapsulates either a success value or an error message.
-- **Dependency Injection:** In `Main.java`, repositories and services are wired together manually, demonstrating understanding of IoC without relying on heavy frameworks like Spring.
-- **Interface Segregation:** Services are defined by Interfaces (`CatalogService`, `RegistrationService`) to decouple implementation from contract.
-
 ## Demo Scenario (Pre-loaded Data)
 
 When you run the app, the following data is automatically loaded:
@@ -85,28 +79,28 @@ This demo shows how the system handles capacity limits, waitlists, admin overrid
 2. Enter student ID: `S1`
 3. Choose option `2` (Enroll in Section)
 4. Enter section ID: `CS101-SMALL` (capacity: 1, waitlist: 2)
-5. **Result:** ✅ Success! S1 is enrolled (first student)
+5. **Result:** Success! S1 is enrolled (first student)
 
 **Step 2: Another student enrolls (goes to waitlist)**
 1. Login as **Student (S2)** → Choose option `1`
 2. Enter student ID: `S2`
 3. Choose option `2` (Enroll in Section)
 4. Enter section ID: `CS101-SMALL`
-5. **Result:** ✅ Success! S2 is waitlisted (section is full)
+5. **Result:** Success! S2 is waitlisted (section is full)
 
 **Step 3: Third student enrolls (also waitlisted)**
 1. Login as **Student (S3)** → Choose option `1`
 2. Enter student ID: `S3`
 3. Choose option `2` (Enroll in Section)
 4. Enter section ID: `CS101-SMALL`
-5. **Result:** ✅ Success! S3 is waitlisted
+5. **Result:** Success! S3 is waitlisted
 
 **Step 4: Fourth student tries to enroll (should fail - waitlist full)**
 1. Login as **Student (S4)** → Choose option `1`
 2. Enter student ID: `S4`
 3. Choose option `2` (Enroll in Section)
 4. Enter section ID: `CS101-SMALL`
-5. **Result:** ❌ Failed! "Section and waitlist are full"
+5. **Result:** Failed! "Section and waitlist are full"
 
 **Step 5: Admin override enrollment (should succeed)**
 1. Login as **Admin (A1)** → Choose option `3`
@@ -115,14 +109,14 @@ This demo shows how the system handles capacity limits, waitlists, admin overrid
 4. Enter student ID: `S4`
 5. Enter section ID: `CS101-SMALL`
 6. Enter reason: `Special permission granted`
-7. **Result:** ✅ Success! S4 is forcefully enrolled (bypasses capacity)
+7. **Result:** Success! S4 is forcefully enrolled (bypasses capacity)
 
 **Step 6: Student drops → Waitlist auto-promotion**
 1. Login as **Student (S1)** → Choose option `1`
 2. Enter student ID: `S1`
 3. Choose option `3` (Drop Section)
 4. Enter section ID: `CS101-SMALL`
-5. **Result:** ✅ Success! S1 dropped, and S2 (first waitlisted) is automatically promoted to ENROLLED
+5. **Result:** Success! S1 dropped, and S2 (first waitlisted) is automatically promoted to ENROLLED
 
 **Step 7: Verify the results**
 1. Login as **Student (S2)** → Choose option `1`
