@@ -145,41 +145,177 @@ This demo shows how the system handles capacity limits, waitlists, admin overrid
 
 The project includes a comprehensive UML class diagram showing the relationships between all core entities, interfaces, and their associations.
 
-**Location:** `docs/class-diagram.puml`
+```mermaid
+classDiagram
+    class Person {
+        <<abstract>>
+        -String id
+        -String firstName
+        -String lastName
+        -String email
+        +getId() String
+        +getFullName() String
+        +role()* String
+        +displayProfile()* String
+    }
+    
+    class Student {
+        -String major
+        -int year
+        -Transcript transcript
+        -List~Enrollment~ currentEnrollments
+        +getMajor() String
+        +getYear() int
+        +getTranscript() Transcript
+    }
+    
+    class Instructor {
+        -String department
+        -String officeNumber
+        -List~Section~ assignedSections
+        +getDepartment() String
+        +getOfficeNumber() String
+    }
+    
+    class Admin {
+    }
+    
+    class Course {
+        -String code
+        -String title
+        -int credits
+        -List~String~ prerequisites
+        +getCode() String
+        +getTitle() String
+        +getCredits() int
+        +matchesKeyword(String) boolean
+    }
+    
+    class Section {
+        -String id
+        -Course course
+        -String term
+        -Instructor instructor
+        -int capacity
+        -List~TimeSlot~ meetingTimes
+        -List~Enrollment~ roster
+        +getId() String
+        +getCourse() Course
+        +getMeetingTimes() List~TimeSlot~
+    }
+    
+    class Enrollment {
+        -Student student
+        -Section section
+        -EnrollmentStatus status
+        -Optional~Grade~ grade
+        +getStudent() Student
+        +getSection() Section
+        +assignGrade(Grade) void
+        +hasGrade() boolean
+    }
+    
+    class Transcript {
+        -Student student
+        -List~TranscriptEntry~ entries
+        +getStudent() Student
+        +getGpa() double
+    }
+    
+    class TranscriptEntry {
+        -Section section
+        -Grade grade
+        +getSection() Section
+        +getGrade() Grade
+    }
+    
+    class TimeSlot {
+        -DayOfWeek dayOfWeek
+        -LocalTime start
+        -LocalTime end
+        -String room
+        +overlaps(TimeSlot) boolean
+    }
+    
+    class EnrollmentStatus {
+        <<enumeration>>
+        ENROLLED
+        DROPPED
+        WAITLISTED
+    }
+    
+    class Grade {
+        <<enumeration>>
+        A
+        B
+        C
+        D
+        F
+        I
+        W
+        +getPoints() double
+        +countsTowardsGpa() boolean
+    }
+    
+    class Schedulable {
+        <<interface>>
+        +getMeetingTimes() List~TimeSlot~
+    }
+    
+    class Searchable {
+        <<interface>>
+        +matchesKeyword(String) boolean
+    }
+    
+    class Gradable {
+        <<interface>>
+        +assignGrade(Grade) void
+        +getGrade() Optional~Grade~
+        +hasGrade() boolean
+    }
+    
+    class Specification {
+        <<interface>>
+        +isSatisfiedBy(T) boolean
+    }
+    
+    class CourseSpecification {
+        -String code
+        -String title
+        -Integer minCredits
+        -Integer maxCredits
+        +isSatisfiedBy(Course) boolean
+    }
+    
+    Person <|-- Student
+    Person <|-- Instructor
+    Person <|-- Admin
+    
+    Section ..|> Schedulable
+    Course ..|> Searchable
+    Enrollment ..|> Gradable
+    CourseSpecification ..|> Specification
+    
+    Course "1" *-- "*" Section : contains
+    Section "*" o-- "*" Enrollment : has
+    Student "1" *-- "1" Transcript : has
+    Transcript "1" *-- "*" TranscriptEntry : contains
+    Section "*" o-- "*" TimeSlot : has
+    Section "*" o-- "1" Instructor : assigned to
+    Enrollment "*" o-- "1" Student : belongs to
+    Enrollment "*" o-- "1" Section : enrolls in
+    TranscriptEntry "*" o-- "1" Section : references
+    Enrollment "*" o-- "1" Grade : receives
+    TranscriptEntry "*" o-- "1" Grade : contains
+    Enrollment "*" o-- "1" EnrollmentStatus : has
+```
 
-The diagram illustrates:
+**Key Relationships:**
+- **Inheritance:** `Person` → `Student`/`Instructor`/`Admin`
+- **Implementation:** `Section` implements `Schedulable`, `Course` implements `Searchable`, `Enrollment` implements `Gradable`, `CourseSpecification` implements `Specification<Course>`
+- **Associations:** `Course`-`Section` (1-*), `Section`-`Enrollment` (*), `Student`-`Transcript` (1-1), `Section`-`Instructor` (*-1), `Section`-`TimeSlot` (*)
 
-- **Abstract Classes:** `Person` (base class for all users)
-- **Concrete Classes:** `Student`, `Instructor`, `Admin`, `Course`, `Section`, `Enrollment`, `Transcript`, `TranscriptEntry`, `TimeSlot`
-- **Enums:** `Grade`, `EnrollmentStatus`
-- **Interfaces:** `Repository<T,ID>`, `Schedulable`, `Searchable`, `Gradable`, `Specification<T>`
-- **Key Relationships:**
-  - Inheritance: `Person` → `Student`/`Instructor`/`Admin`
-  - Implementation: `Section` implements `Schedulable`, `Course` implements `Searchable`, `Enrollment` implements `Gradable`, `CourseSpecification` implements `Specification<Course>`
-  - Associations: `Course`-`Section` (1-*), `Section`-`Enrollment` (*), `Student`-`Transcript` (1-1), `Section`-`Instructor` (*-1), `Section`-`TimeSlot` (*)
-
-To view the diagram:
-
-1. **Using PlantUML:**
-   - Install PlantUML plugin in your IDE (IntelliJ IDEA, VS Code, etc.)
-   - Open `docs/class-diagram.puml`
-   - The diagram will render automatically
-
-2. **Using Online Tools:**
-   - Copy the contents of `docs/class-diagram.puml`
-   - Paste into [PlantUML Online Server](http://www.plantuml.com/plantuml/uml/)
-   - View the rendered diagram
-
-3. **Using Command Line:**
-   ```bash
-   # Install PlantUML (requires Java)
-   # macOS: brew install plantuml
-   # Linux: apt-get install plantuml
-   # Windows: Download from http://plantuml.com/download
-   
-   # Generate PNG
-   plantuml docs/class-diagram.puml
-   ```
+> **Note:** A detailed PlantUML version is also available at `docs/class-diagram.puml` for offline viewing.
 
 ## Test Results
 
