@@ -21,12 +21,24 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * Implementation of the CatalogService interface.
+ * Handles course and section creation, searching, instructor assignment, and admin overrides.
+ */
 public class CatalogServiceImpl implements CatalogService {
     private final CourseRepository courseRepository;
     private final SectionRepository sectionRepository;
     private final PersonRepository personRepository;
     private final List<AdminOverrideLog> overrideLogs;
 
+    /**
+     * Creates a new CatalogServiceImpl with the required repositories.
+     *
+     * @param courseRepository repository for course data
+     * @param sectionRepository repository for section data
+     * @param personRepository repository for person data
+     * @throws IllegalArgumentException if any parameter is null
+     */
     public CatalogServiceImpl(CourseRepository courseRepository, SectionRepository sectionRepository, PersonRepository personRepository) {
         if (courseRepository == null || sectionRepository == null || personRepository == null) {
             throw new IllegalArgumentException("Repositories cannot be null");
@@ -70,6 +82,13 @@ public class CatalogServiceImpl implements CatalogService {
         return Result.ok(filteredCourses);
     }
 
+    /**
+     * Checks if a course matches the basic search criteria (code, title, credits).
+     *
+     * @param c the course to check
+     * @param query the search query
+     * @return true if the course matches, false otherwise
+     */
     private boolean matchesCourseFields(Course c, CourseQuery query) {
         boolean ok = true;
         if (query.getCode() != null && !query.getCode().isBlank()) {
@@ -87,6 +106,12 @@ public class CatalogServiceImpl implements CatalogService {
         return ok;
     }
 
+    /**
+     * Checks if the query includes section-level criteria (instructor, time window).
+     *
+     * @param query the search query
+     * @return true if section criteria are present, false otherwise
+     */
     private boolean hasSectionCriteria(CourseQuery query) {
         return (query.getInstructorName() != null && !query.getInstructorName().isBlank()) ||
                query.getDayOfWeek() != null ||
@@ -94,6 +119,12 @@ public class CatalogServiceImpl implements CatalogService {
                query.getEndTime() != null;
     }
 
+    /**
+     * Finds course codes that match section-level search criteria (instructor, time).
+     *
+     * @param query the search query
+     * @return a set of course codes that match the criteria
+     */
     private Set<String> findCourseCodesMatchingSectionCriteria(CourseQuery query) {
         List<Section> allSections = sectionRepository.findAll();
         Set<String> matchingCourseCodes = new HashSet<>();
@@ -227,6 +258,11 @@ public class CatalogServiceImpl implements CatalogService {
                 .orElse(Result.fail("Instructor not found"));
     }
 
+    /**
+     * Gets a copy of all admin override logs for audit purposes.
+     *
+     * @return a list of admin override logs
+     */
     public List<AdminOverrideLog> getOverrideLogs() {
         return new ArrayList<>(overrideLogs);
     }

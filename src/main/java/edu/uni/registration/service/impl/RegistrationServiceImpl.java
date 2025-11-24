@@ -12,6 +12,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Implementation of the RegistrationService interface.
+ * Handles student enrollment, dropping, schedule viewing, and admin overrides.
+ */
 public class RegistrationServiceImpl implements RegistrationService {
 
     private final StudentRepository studentRepository;
@@ -21,6 +25,16 @@ public class RegistrationServiceImpl implements RegistrationService {
     private final PersonRepository personRepository;
     private final List<AdminOverrideLog> overrideLogs;
 
+    /**
+     * Creates a new RegistrationServiceImpl with the required repositories and validators.
+     *
+     * @param studentRepository repository for student data
+     * @param sectionRepository repository for section data
+     * @param prerequisiteValidator validator for checking prerequisites
+     * @param transcriptRepository repository for transcript data
+     * @param personRepository repository for person data
+     * @throws IllegalArgumentException if any parameter is null
+     */
     public RegistrationServiceImpl(StudentRepository studentRepository,
                                SectionRepository sectionRepository,PrerequisiteValidator prerequisiteValidator, TranscriptRepository transcriptRepository, PersonRepository personRepository) {
         if (studentRepository == null || sectionRepository == null  || prerequisiteValidator == null || transcriptRepository == null || personRepository == null) {
@@ -111,20 +125,19 @@ public class RegistrationServiceImpl implements RegistrationService {
             return Result.fail("Student is not enrolled in this section");
         }
 
+        // Save the original status before dropping
+        EnrollmentStatus originalStatus = target.getStatus();
         target.setStatus(EnrollmentStatus.DROPPED);
 
-        // Promote from waitlist if a seat opened and we dropped an ENROLLED student
-        if (target.getStatus() == EnrollmentStatus.DROPPED) { // Re-check status just to be safe
-             Enrollment waitlisted = null;
-             for (Enrollment e : section.getRoster()) {
-                 if (e.getStatus() == EnrollmentStatus.WAITLISTED) {
-                     waitlisted = e;
-                     break;
-                 }
-             }
-             if (waitlisted != null) {
-                 waitlisted.setStatus(EnrollmentStatus.ENROLLED);
-             }
+        // Promote from waitlist if a seat opened (we dropped an ENROLLED student)
+        if (originalStatus == EnrollmentStatus.ENROLLED) {
+            // Find the first waitlisted student and promote them
+            for (Enrollment e : section.getRoster()) {
+                if (e.getStatus() == EnrollmentStatus.WAITLISTED) {
+                    e.setStatus(EnrollmentStatus.ENROLLED);
+                    break; // Only promote one student
+                }
+            }
         }
         
         return Result.ok(null);
@@ -185,6 +198,14 @@ public class RegistrationServiceImpl implements RegistrationService {
         return Result.ok(tOpt.get());
     }
 
+    /**
+     * Finds the first section that conflicts with the target section for the given student.
+     * A conflict occurs if the student is enrolled in another section with overlapping meeting times.
+     *
+     * @param student the student to check conflicts for
+     * @param target the section to check against
+     * @return the conflicting section if found, null otherwise
+     */
     private Section findFirstConflictSection(Student student, Section target) {
         List<Section> all = sectionRepository.findAll();
 
@@ -245,6 +266,11 @@ public class RegistrationServiceImpl implements RegistrationService {
         return Result.ok(enrollment);
     }
 
+    /**
+     * Gets a copy of all admin override logs for audit purposes.
+     *
+     * @return a list of admin override logs
+     */
     public List<AdminOverrideLog> getOverrideLogs() {
         return new ArrayList<>(overrideLogs);
     }
