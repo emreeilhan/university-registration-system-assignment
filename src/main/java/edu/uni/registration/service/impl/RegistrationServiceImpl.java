@@ -140,6 +140,8 @@ public class RegistrationServiceImpl implements RegistrationService {
         List<Section> allSections = sectionRepository.findAll();
         List<Section> result = new ArrayList<>();
 
+        // Using a standard loop to filter sections logic manually
+        // Check if student is enrolled in the section
         for (Section section : allSections) {
 
             if (term != null && !term.isBlank()) {
@@ -162,6 +164,25 @@ public class RegistrationServiceImpl implements RegistrationService {
             }
         }
         return Result.ok(result);
+    }
+
+    @Override
+    public Result<Transcript> getTranscript(String studentId) {
+        if (studentId == null) return Result.fail("Student ID cannot be null");
+        
+        // Ensure student exists
+        if (studentRepository.findById(studentId).isEmpty()) {
+            return Result.fail("Student not found: " + studentId);
+        }
+
+        Optional<Transcript> tOpt = transcriptRepository.findById(studentId);
+        if (tOpt.isEmpty()) {
+            // If no transcript found (maybe new student), return empty/new one or fail depending on logic.
+            // Here we assume it might not exist yet if no grades are posted, but usually created on student creation.
+            // Let's return a fail or create on fly if desired. For now fail if not found.
+            return Result.fail("No transcript record found for student.");
+        }
+        return Result.ok(tOpt.get());
     }
 
     private Section findFirstConflictSection(Student student, Section target) {
