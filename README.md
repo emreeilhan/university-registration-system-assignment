@@ -141,7 +141,77 @@ This demo shows how the system handles capacity limits, waitlists, admin overrid
 - Try enrolling `S1` in `MATH101-01` (Mon 11:00-12:30) → Should succeed (no conflict)
 - Try enrolling `S1` in another section with overlapping times → Should fail: "time conflict"
 
+## UML Class Diagram
 
+The project includes a comprehensive UML class diagram showing the relationships between all core entities, interfaces, and their associations.
 
+**Location:** `docs/class-diagram.puml`
 
+The diagram illustrates:
+
+- **Abstract Classes:** `Person` (base class for all users)
+- **Concrete Classes:** `Student`, `Instructor`, `Admin`, `Course`, `Section`, `Enrollment`, `Transcript`, `TranscriptEntry`, `TimeSlot`
+- **Enums:** `Grade`, `EnrollmentStatus`
+- **Interfaces:** `Repository<T,ID>`, `Schedulable`, `Searchable`, `Gradable`, `Specification<T>`
+- **Key Relationships:**
+  - Inheritance: `Person` → `Student`/`Instructor`/`Admin`
+  - Implementation: `Section` implements `Schedulable`, `Course` implements `Searchable`, `Enrollment` implements `Gradable`, `CourseSpecification` implements `Specification<Course>`
+  - Associations: `Course`-`Section` (1-*), `Section`-`Enrollment` (*), `Student`-`Transcript` (1-1), `Section`-`Instructor` (*-1), `Section`-`TimeSlot` (*)
+
+To view the diagram:
+
+1. **Using PlantUML:**
+   - Install PlantUML plugin in your IDE (IntelliJ IDEA, VS Code, etc.)
+   - Open `docs/class-diagram.puml`
+   - The diagram will render automatically
+
+2. **Using Online Tools:**
+   - Copy the contents of `docs/class-diagram.puml`
+   - Paste into [PlantUML Online Server](http://www.plantuml.com/plantuml/uml/)
+   - View the rendered diagram
+
+3. **Using Command Line:**
+   ```bash
+   # Install PlantUML (requires Java)
+   # macOS: brew install plantuml
+   # Linux: apt-get install plantuml
+   # Windows: Download from http://plantuml.com/download
+   
+   # Generate PNG
+   plantuml docs/class-diagram.puml
+   ```
+
+## Test Results
+
+The project includes comprehensive unit tests covering core business logic, validation rules, and repository operations.
+
+**Test Results Documentation:** See [docs/test-results.md](docs/test-results.md) for detailed test execution output.
+
+### Test Coverage
+
+The test suite includes:
+
+- **Admin Workflow Tests** - Admin override functionality and capacity management
+- **Capacity Validator Tests** - Section capacity and waitlist validation
+- **Prerequisite Validator Tests** - Course prerequisite checking logic
+- **Repository Tests** - CRUD operations for all repository implementations
+- **Schedule Conflict Checker Tests** - Time slot overlap detection
+- **Student Transcript Tests** - Transcript retrieval and GPA calculation
+- **Time Slot Tests** - TimeSlot model validation and overlap detection
+- **Transcript Tests** - Transcript entry management and GPA calculation
+
+### Running Tests
+
+```bash
+# Run all tests
+mvn test
+
+# Run specific test class
+mvn test -Dtest=TimeSlotTest
+
+# Run tests with verbose output
+mvn test -X
+```
+
+For complete test execution output and results, refer to [docs/test-results.md](docs/test-results.md).
 
