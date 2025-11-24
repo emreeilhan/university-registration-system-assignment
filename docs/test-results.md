@@ -116,42 +116,6 @@ The test suite covers the following areas:
 7. **Time Slot Tests** - TimeSlot model validation and overlap detection
 8. **Transcript Tests** - Transcript entry management and GPA calculation
 
-## Instructions to Run Tests
-
-### Prerequisites
-
-1. Install Maven (if not already installed):
-   - **macOS:** `brew install maven`
-   - **Linux:** `sudo apt-get install maven` or `sudo yum install maven`
-   - **Windows:** Download from [Apache Maven](https://maven.apache.org/download.cgi)
-
-2. Ensure Java JDK 17+ is installed
-
-### Running Tests
-
-```bash
-# Navigate to project root
-cd /path/to/university-registration-system
-
-# Run all tests
-mvn test
-
-# Run tests with verbose output
-mvn test -X
-
-# Run specific test class
-mvn test -Dtest=TimeSlotTest
-
-# Run tests and generate coverage report (if configured)
-mvn test jacoco:report
-```
-
-### Alternative: Run Tests via IDE
-
-Most IDEs (IntelliJ IDEA, Eclipse, VS Code) can run JUnit tests directly:
-- Right-click on `src/test` folder → "Run All Tests"
-- Or run individual test classes
-
 ## Test Execution Details
 
 ### Individual Test Class Results
