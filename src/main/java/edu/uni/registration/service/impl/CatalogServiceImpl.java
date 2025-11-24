@@ -4,22 +4,18 @@ import edu.uni.registration.model.Course;
 import edu.uni.registration.model.Instructor;
 import edu.uni.registration.model.Person;
 import edu.uni.registration.model.Section;
-import edu.uni.registration.model.TimeSlot;
 import edu.uni.registration.repository.CourseRepository;
 import edu.uni.registration.repository.SectionRepository;
 import edu.uni.registration.repository.PersonRepository;
 import edu.uni.registration.service.CatalogService;
 import edu.uni.registration.util.CourseQuery;
+import edu.uni.registration.util.CourseSpecification;
 import edu.uni.registration.util.Result;
 import edu.uni.registration.util.AdminOverrideLog;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * Implementation of the CatalogService interface.
@@ -52,126 +48,25 @@ public class CatalogServiceImpl implements CatalogService {
     @Override
     public Result<List<Course>> search(CourseQuery query) {
         List<Course> allCourses = courseRepository.findAll();
-        if (query == null) {
+        
+        // Convert CourseQuery to Specification pattern
+        CourseSpecification specification = CourseSpecification.fromQuery(query, sectionRepository);
+        
+        if (specification == null) {
             return Result.ok(allCourses);
         }
 
+        // Filter courses using Specification pattern
         List<Course> filteredCourses = new ArrayList<>();
-
-        // Basic filtering on Course fields using traditional loops
-        // This is easier to debug and trace than complex streams
-        for (Course c : allCourses) {
-            if (matchesCourseFields(c, query)) {
-                filteredCourses.add(c);
+        for (Course course : allCourses) {
+            if (specification.isSatisfiedBy(course)) {
+                filteredCourses.add(course);
             }
-        }
-
-        // Advanced filtering (Instructor, Time) requires checking Sections
-        if (hasSectionCriteria(query)) {
-            Set<String> validCourseCodes = findCourseCodesMatchingSectionCriteria(query);
-            List<Course> finalResult = new ArrayList<>();
-            
-            for (Course c : filteredCourses) {
-                if (validCourseCodes.contains(c.getCode())) {
-                    finalResult.add(c);
-                }
-            }
-            return Result.ok(finalResult);
         }
 
         return Result.ok(filteredCourses);
     }
 
-    /**
-     * Checks if a course matches the basic search criteria (code, title, credits).
-     *
-     * @param c the course to check
-     * @param query the search query
-     * @return true if the course matches, false otherwise
-     */
-    private boolean matchesCourseFields(Course c, CourseQuery query) {
-        boolean ok = true;
-        if (query.getCode() != null && !query.getCode().isBlank()) {
-            ok &= c.getCode() != null && c.getCode().toLowerCase(Locale.ROOT).contains(query.getCode().toLowerCase(Locale.ROOT));
-        }
-        if (query.getTitle() != null && !query.getTitle().isBlank()) {
-            ok &= c.getTitle() != null && c.getTitle().toLowerCase(Locale.ROOT).contains(query.getTitle().toLowerCase(Locale.ROOT));
-        }
-        if (query.getMinCredits() != null) {
-            ok &= c.getCredits() >= query.getMinCredits();
-        }
-        if (query.getMaxCredits() != null) {
-            ok &= c.getCredits() <= query.getMaxCredits();
-        }
-        return ok;
-    }
-
-    /**
-     * Checks if the query includes section-level criteria (instructor, time window).
-     *
-     * @param query the search query
-     * @return true if section criteria are present, false otherwise
-     */
-    private boolean hasSectionCriteria(CourseQuery query) {
-        return (query.getInstructorName() != null && !query.getInstructorName().isBlank()) ||
-               query.getDayOfWeek() != null ||
-               query.getStartTime() != null ||
-               query.getEndTime() != null;
-    }
-
-    /**
-     * Finds course codes that match section-level search criteria (instructor, time).
-     *
-     * @param query the search query
-     * @return a set of course codes that match the criteria
-     */
-    private Set<String> findCourseCodesMatchingSectionCriteria(CourseQuery query) {
-        List<Section> allSections = sectionRepository.findAll();
-        Set<String> matchingCourseCodes = new HashSet<>();
-
-        for (Section s : allSections) {
-            boolean matches = true;
-
-            // Check Instructor
-            if (query.getInstructorName() != null && !query.getInstructorName().isBlank()) {
-                if (s.getInstructor() == null || !s.getInstructor().getFullName().toLowerCase(Locale.ROOT)
-                        .contains(query.getInstructorName().toLowerCase(Locale.ROOT))) {
-                    matches = false;
-                }
-            }
-
-            // Check Time Window
-            if (matches && (query.getDayOfWeek() != null || query.getStartTime() != null || query.getEndTime() != null)) {
-                boolean timeMatch = false;
-                for (TimeSlot slot : s.getMeetingTimes()) {
-                    boolean slotOk = true;
-                    if (query.getDayOfWeek() != null && slot.getDayOfWeek() != query.getDayOfWeek()) {
-                        slotOk = false;
-                    }
-                    // Check if slot is within the requested window
-                    if (query.getStartTime() != null && slot.getStart().isBefore(query.getStartTime())) {
-                         slotOk = false;
-                    }
-                    if (query.getEndTime() != null && slot.getEnd().isAfter(query.getEndTime())) {
-                         slotOk = false;
-                    }
-                    
-                    if (slotOk) {
-                        timeMatch = true;
-                        break;
-                    }
-                }
-                if (!timeMatch) {
-                    matches = false;
-                }
-            }
-
-            if (matches) {
-                matchingCourseCodes.add(s.getCourse().getCode());
-            }
-        }
-        return matchingCourseCodes;
-    }
 
     @Override
     public Result<Course> createCourse(String code, String title, int credits) {

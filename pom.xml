@@ -16,9 +16,6 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.release>17</maven.compiler.release>
-
-        <!-- JavaFX versiyonunu buradan yönetiyoruz -->
-        <javafx.version>23.0.2</javafx.version>
     </properties>
 
     <!-- JUnit versiyonlarını buradan yönetiyoruz -->
@@ -54,21 +51,6 @@
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-engine</artifactId>
             <scope>test</scope>
-        </dependency>
-
-        <!-- ===================== -->
-        <!--   GUI: JavaFX         -->
-        <!-- ===================== -->
-        <dependency>
-            <groupId>org.openjfx</groupId>
-            <artifactId>javafx-controls</artifactId>
-            <version>${javafx.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.openjfx</groupId>
-            <artifactId>javafx-fxml</artifactId>
-            <version>${javafx.version}</version>
         </dependency>
     </dependencies>
 
@@ -114,19 +96,6 @@
                 </plugin>
             </plugins>
         </pluginManagement>
-
-        <!-- JavaFX çalıştırmak için plugin -->
-        <plugins>
-            <plugin>
-                <groupId>org.openjfx</groupId>
-                <artifactId>javafx-maven-plugin</artifactId>
-                <version>0.0.8</version>
-                <configuration>
-                    <!-- GUI main class'ını sonra buraya yazacağız -->
-                    <mainClass>edu.uni.registration.gui.MainGUI</mainClass>
-                </configuration>
-            </plugin>
-        </plugins>
     </build>
 
 </project>

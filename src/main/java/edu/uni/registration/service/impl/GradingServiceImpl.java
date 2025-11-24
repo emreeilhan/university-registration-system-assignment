@@ -1,6 +1,7 @@
 package edu.uni.registration.service.impl;
 
 import edu.uni.registration.model.Enrollment;
+import edu.uni.registration.model.Gradable;
 import edu.uni.registration.model.Grade;
 import edu.uni.registration.model.Section;
 import edu.uni.registration.model.Student;
@@ -60,7 +61,9 @@ public class GradingServiceImpl implements GradingService {
         if (eOpt.isEmpty()) return Result.fail("Enrollment not found");
         
         Enrollment enrollment = eOpt.get();
-        enrollment.assignGrade(grade);
+        // Use Gradable interface for polymorphic grade assignment
+        Gradable gradable = enrollment;
+        gradable.assignGrade(grade);
         
         Transcript transcript = transcriptRepository.findById(studentId)
                 .orElseGet(() -> transcriptRepository.save(new Transcript(student)));

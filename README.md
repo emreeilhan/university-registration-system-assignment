@@ -70,16 +70,76 @@ mvn test
 
 When you run the app, the following data is automatically loaded:
 
-- **Students:** `S1` (Ali), `S2` (Ayse)
-- **Admin:** `A1`
-- **Courses:** `CS101` (Intro), `CS102` (Data Structures - Prereq: CS101)
-- **Sections:** `SEC101-A` (CS101), `SEC102-A` (CS102)
+- **Students:** `S1` (John Doe), `S2` (Jane Roe), `S3` (Mike Wazowski), `S4` (Sully Sullivan), `S5` (Peter Parker), `S6` (Tony Stark)
+- **Instructors:** `I1` (Alice Smith), `I2` (Bob Jones), `I3` (Charlie Brown)
+- **Admin:** `A1` (Super Admin)
+- **Courses:** CS101, CS102, CS201, MATH101, MATH102, PHYS101 (with prerequisite chains)
+- **Sections:** 10 sections across Fall 2023 and Spring 2024 terms
 
-**Try this flow:**
-1. Login as **Student (S1)**.
-2. Search for "CS101".
-3. Enroll in `SEC101-A`.
-4. View Schedule.
+### Demo Flow: Capacity, Waitlist, and Admin Override
+
+This demo shows how the system handles capacity limits, waitlists, admin overrides, and automatic waitlist promotion.
+
+**Step 1: Student tries to enroll in a full section (should fail)**
+1. Login as **Student (S1)** → Choose option `1`
+2. Enter student ID: `S1`
+3. Choose option `2` (Enroll in Section)
+4. Enter section ID: `CS101-SMALL` (capacity: 1, waitlist: 2)
+5. **Result:** ✅ Success! S1 is enrolled (first student)
+
+**Step 2: Another student enrolls (goes to waitlist)**
+1. Login as **Student (S2)** → Choose option `1`
+2. Enter student ID: `S2`
+3. Choose option `2` (Enroll in Section)
+4. Enter section ID: `CS101-SMALL`
+5. **Result:** ✅ Success! S2 is waitlisted (section is full)
+
+**Step 3: Third student enrolls (also waitlisted)**
+1. Login as **Student (S3)** → Choose option `1`
+2. Enter student ID: `S3`
+3. Choose option `2` (Enroll in Section)
+4. Enter section ID: `CS101-SMALL`
+5. **Result:** ✅ Success! S3 is waitlisted
+
+**Step 4: Fourth student tries to enroll (should fail - waitlist full)**
+1. Login as **Student (S4)** → Choose option `1`
+2. Enter student ID: `S4`
+3. Choose option `2` (Enroll in Section)
+4. Enter section ID: `CS101-SMALL`
+5. **Result:** ❌ Failed! "Section and waitlist are full"
+
+**Step 5: Admin override enrollment (should succeed)**
+1. Login as **Admin (A1)** → Choose option `3`
+2. Enter admin ID: `A1`
+3. Choose option `5` (Override Enrollment - Force Add)
+4. Enter student ID: `S4`
+5. Enter section ID: `CS101-SMALL`
+6. Enter reason: `Special permission granted`
+7. **Result:** ✅ Success! S4 is forcefully enrolled (bypasses capacity)
+
+**Step 6: Student drops → Waitlist auto-promotion**
+1. Login as **Student (S1)** → Choose option `1`
+2. Enter student ID: `S1`
+3. Choose option `3` (Drop Section)
+4. Enter section ID: `CS101-SMALL`
+5. **Result:** ✅ Success! S1 dropped, and S2 (first waitlisted) is automatically promoted to ENROLLED
+
+**Step 7: Verify the results**
+1. Login as **Student (S2)** → Choose option `1`
+2. Enter student ID: `S2`
+3. Choose option `4` (View Schedule)
+4. **Result:** You should see `CS101-SMALL` in the schedule (promoted from waitlist)
+
+### Additional Demo Scenarios
+
+**Prerequisite Check:**
+- Try enrolling `S1` (no history) in `CS102-01` → Should fail: "Student has not completed prerequisites"
+- Try enrolling `S3` (passed CS101) in `CS102-01` → Should succeed
+
+**Schedule Conflict:**
+- Enroll `S1` in `CS101-01` (Mon/Wed 9:00-10:30)
+- Try enrolling `S1` in `MATH101-01` (Mon 11:00-12:30) → Should succeed (no conflict)
+- Try enrolling `S1` in another section with overlapping times → Should fail: "time conflict"
 
 
 

@@ -4,8 +4,10 @@ import java.util.Optional;
 /**
  * Represents a student's enrollment in a section.
  * Tracks the enrollment status (enrolled, dropped, or waitlisted) and the grade if assigned.
+ * 
+ * Implements Gradable interface to enable polymorphic grade assignment.
  */
-public class Enrollment {
+public class Enrollment implements Gradable {
     private final Student student;
     private final Section section;
 

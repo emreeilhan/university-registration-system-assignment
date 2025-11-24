@@ -3,12 +3,15 @@ package edu.uni.registration.model;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Collections;
+import java.util.Locale;
 
 /**
  * Represents a course offered by the university.
  * Each course has a unique code, title, credit hours, and optional prerequisites.
+ * 
+ * Implements Searchable interface to enable keyword-based searching.
  */
-public class Course {
+public class Course implements Searchable {
 
     private final String code;
     private String title;
@@ -112,6 +115,34 @@ public class Course {
      */
     public void removePrerequisite(String courseCode) {
         prerequisites.remove(courseCode);
+    }
+
+    /**
+     * Checks if this course matches the given search keyword.
+     * Performs case-insensitive matching against the course code and title.
+     * 
+     * @param keyword the search term to match against
+     * @return true if the course code or title contains the keyword (case-insensitive), false otherwise
+     */
+    @Override
+    public boolean matchesKeyword(String keyword) {
+        if (keyword == null || keyword.isBlank()) {
+            return false;
+        }
+        
+        String lowerKeyword = keyword.toLowerCase(Locale.ROOT);
+        
+        // Check if keyword matches course code
+        if (code != null && code.toLowerCase(Locale.ROOT).contains(lowerKeyword)) {
+            return true;
+        }
+        
+        // Check if keyword matches course title
+        if (title != null && title.toLowerCase(Locale.ROOT).contains(lowerKeyword)) {
+            return true;
+        }
+        
+        return false;
     }
 
     @Override
