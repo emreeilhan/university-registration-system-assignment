@@ -47,11 +47,11 @@ public interface CatalogService {
     /**
      * Assigns an instructor to a specific section.
      *
-     * @param sectionId  The ID of the section.
-     * @param instructor The Instructor object to assign.
+     * @param sectionId    The ID of the section.
+     * @param instructorId The ID of the instructor to assign.
      * @return A Result indicating success or failure.
      */
-    Result<Void> assignInstructor(String sectionId, Instructor instructor);
+    Result<Void> assignInstructor(String sectionId, String instructorId);
 
     /**
      * Allows an admin to manually override the capacity of a section.

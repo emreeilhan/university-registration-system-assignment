@@ -42,6 +42,14 @@ public interface RegistrationService {
     Result<List<Section>> getCurrentSchedule(String studentId, String term);
 
     /**
+     * Retrieves the student's transcript details (entries and GPA).
+     *
+     * @param studentId The ID of the student.
+     * @return A Result containing the Transcript object.
+     */
+    Result<edu.uni.registration.model.Transcript> getTranscript(String studentId);
+
+    /**
      * Allows an admin to bypass standard enrollment rules (capacity, prerequisites).
      * This action is logged for audit purposes.
      *

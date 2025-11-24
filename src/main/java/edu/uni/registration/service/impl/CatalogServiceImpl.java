@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -43,17 +44,27 @@ public class CatalogServiceImpl implements CatalogService {
             return Result.ok(allCourses);
         }
 
-        // Basic filtering on Course fields
-        List<Course> filteredCourses = allCourses.stream()
-                .filter(c -> matchesCourseFields(c, query))
-                .collect(Collectors.toList());
+        List<Course> filteredCourses = new ArrayList<>();
+
+        // Basic filtering on Course fields using traditional loops
+        // This is easier to debug and trace than complex streams
+        for (Course c : allCourses) {
+            if (matchesCourseFields(c, query)) {
+                filteredCourses.add(c);
+            }
+        }
 
         // Advanced filtering (Instructor, Time) requires checking Sections
         if (hasSectionCriteria(query)) {
             Set<String> validCourseCodes = findCourseCodesMatchingSectionCriteria(query);
-            filteredCourses = filteredCourses.stream()
-                    .filter(c -> validCourseCodes.contains(c.getCode()))
-                    .collect(Collectors.toList());
+            List<Course> finalResult = new ArrayList<>();
+            
+            for (Course c : filteredCourses) {
+                if (validCourseCodes.contains(c.getCode())) {
+                    finalResult.add(c);
+                }
+            }
+            return Result.ok(finalResult);
         }
 
         return Result.ok(filteredCourses);
@@ -152,15 +163,20 @@ public class CatalogServiceImpl implements CatalogService {
     }
 
     @Override
-    public Result<Void> assignInstructor(String sectionId, Instructor instructor) {
-        if (sectionId == null) return Result.fail("Section ID cannot be null");
+    public Result<Void> assignInstructor(String sectionId, String instructorId) {
+        if (sectionId == null || instructorId == null) return Result.fail("IDs cannot be null");
+        
+        Optional<Person> pOpt = personRepository.findById(instructorId);
+        if (pOpt.isEmpty()) return Result.fail("Instructor not found: " + instructorId);
+        
+        Person p = pOpt.get();
+        if (!(p instanceof Instructor)) return Result.fail("User is not an instructor");
+        Instructor instructor = (Instructor) p;
         
         return sectionRepository.findById(sectionId)
                 .map(s -> {
                     s.setInstructor(instructor);
-                    if (instructor != null) {
-                        instructor.addAssignedSection(s);
-                    }
+                    instructor.addAssignedSection(s);
                     return Result.<Void>ok(null);
                 })
                 .orElse(Result.fail("Section not found: " + sectionId));
