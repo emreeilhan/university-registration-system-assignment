@@ -72,4 +72,15 @@ public interface CatalogService {
      * @return A Result containing the list of sections.
      */
     Result<List<Section>> getInstructorSections(String instructorId);
+
+    /**
+     * Updates a course's mutable fields. Any null argument will be ignored.
+     * Purpose: allow Admin to edit basic course info from CLI.
+     *
+     * @param code        Existing course code to update (identifier).
+     * @param newTitle    New title (nullable; ignored if null or blank).
+     * @param newCredits  New credits (nullable; ignored if null).
+     * @return Result containing the updated Course or an error.
+     */
+    Result<Course> updateCourse(String code, String newTitle, Integer newCredits);
 }

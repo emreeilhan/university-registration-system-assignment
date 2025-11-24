@@ -161,4 +161,38 @@ public class CatalogServiceImpl implements CatalogService {
     public List<AdminOverrideLog> getOverrideLogs() {
         return new ArrayList<>(overrideLogs);
     }
+
+    @Override
+    public Result<Course> updateCourse(String code, String newTitle, Integer newCredits) {
+        // Purpose: Provide a minimal edit capability for Admin over existing courses
+        if (code == null || code.isBlank()) {
+            return Result.fail("Course code cannot be null");
+        }
+        Optional<Course> cOpt = courseRepository.findById(code);
+        if (cOpt.isEmpty()) {
+            return Result.fail("Course not found: " + code);
+        }
+
+        Course course = cOpt.get();
+
+        boolean changed = false;
+        if (newTitle != null && !newTitle.isBlank()) {
+            course.setTitle(newTitle);
+            changed = true;
+        }
+        if (newCredits != null) {
+            if (newCredits <= 0) {
+                return Result.fail("Credits must be positive");
+            }
+            course.setCredits(newCredits);
+            changed = true;
+        }
+        if (!changed) {
+            return Result.fail("No changes provided");
+        }
+
+        // Persist updated entity
+        courseRepository.save(course);
+        return Result.ok(course);
+    }
 }

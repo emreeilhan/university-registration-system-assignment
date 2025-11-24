@@ -8,6 +8,8 @@ import edu.uni.registration.util.CourseQuery;
 import edu.uni.registration.util.Result;
 import edu.uni.registration.validation.*;
 
+import java.time.DayOfWeek;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Scanner;
 import java.util.Scanner;
@@ -105,15 +107,71 @@ public class CommandLineInterface {
             
             switch (choice) {
                 case "1":
-                    System.out.print("Enter search keyword (or press enter for all): ");
-                    String queryStr = scanner.nextLine();
-                    CourseQuery query = new CourseQuery();
-                    query.setTitle(queryStr);
-                    Result<List<Course>> searchResult = catalogService.search(query);
-                    if (searchResult.isOk()) {
-                        searchResult.get().forEach(System.out::println);
+                    // Purpose: Provide both simple and advanced search capabilities
+                    // Consider extracting this logic into a separate file for better maintainability.
+                    System.out.print("Advanced search? (y/N): ");
+                    String adv = scanner.nextLine();
+                    if ("y".equalsIgnoreCase(adv)) {
+                        CourseQuery q = new CourseQuery();
+                        System.out.print("Code (exact/contains): ");
+                        String code = scanner.nextLine();
+                        if (!code.isBlank()) q.setCode(code);
+
+                        System.out.print("Title (contains): ");
+                        String title = scanner.nextLine();
+                        if (!title.isBlank()) q.setTitle(title);
+
+                        System.out.print("Min Credits (blank to skip): ");
+                        String minC = scanner.nextLine();
+                        if (!minC.isBlank()) {
+                            try { q.setMinCredits(Integer.parseInt(minC)); } catch (NumberFormatException e) { System.out.println("Ignored invalid min credits."); }
+                        }
+
+                        System.out.print("Max Credits (blank to skip): ");
+                        String maxC = scanner.nextLine();
+                        if (!maxC.isBlank()) {
+                            try { q.setMaxCredits(Integer.parseInt(maxC)); } catch (NumberFormatException e) { System.out.println("Ignored invalid max credits."); }
+                        }
+
+                        System.out.print("Instructor name (contains, blank to skip): ");
+                        String ins = scanner.nextLine();
+                        if (!ins.isBlank()) q.setInstructorName(ins);
+
+                        System.out.print("Day of week (e.g., MONDAY, blank to skip): ");
+                        String day = scanner.nextLine();
+                        if (!day.isBlank()) {
+                            try { q.setDayOfWeek(DayOfWeek.valueOf(day.trim().toUpperCase())); }
+                            catch (IllegalArgumentException e) { System.out.println("Ignored invalid day of week."); }
+                        }
+
+                        System.out.print("Start time (HH:mm, blank to skip): ");
+                        String st = scanner.nextLine();
+                        if (!st.isBlank()) {
+                            try { q.setStartTime(LocalTime.parse(st)); }
+                            catch (Exception e) { System.out.println("Ignored invalid start time."); }
+                        }
+
+                        System.out.print("End time (HH:mm, blank to skip): ");
+                        String et = scanner.nextLine();
+                        if (!et.isBlank()) {
+                            try { q.setEndTime(LocalTime.parse(et)); }
+                            catch (Exception e) { System.out.println("Ignored invalid end time."); }
+                        }
+
+                        Result<List<Course>> advRes = catalogService.search(q);
+                        if (advRes.isOk()) advRes.get().forEach(System.out::println);
+                        else System.out.println("Error: " + advRes.getError());
                     } else {
-                        System.out.println("Error: " + searchResult.getError());
+                        System.out.print("Enter search keyword (or press enter for all): ");
+                        String queryStr = scanner.nextLine();
+                        CourseQuery query = new CourseQuery();
+                        query.setTitle(queryStr);
+                        Result<List<Course>> searchResult = catalogService.search(query);
+                        if (searchResult.isOk()) {
+                            searchResult.get().forEach(System.out::println);
+                        } else {
+                            System.out.println("Error: " + searchResult.getError());
+                        }
                     }
                     break;
                 case "2":
@@ -287,6 +345,7 @@ public class CommandLineInterface {
             System.out.println("3. Assign Instructor");
             System.out.println("4. Override Capacity");
             System.out.println("5. Override Enrollment (Force Add)");
+            System.out.println("6. Edit Course (Title/Credits)");
             System.out.println("0. Logout");
             System.out.print("Select action: ");
 
@@ -308,6 +367,9 @@ public class CommandLineInterface {
                     break;
                 case "5":
                     forceEnroll();
+                    break;
+                case "6":
+                    editCourse();
                     break;
                 default:
                     System.out.println("Invalid option.");
@@ -414,6 +476,38 @@ public class CommandLineInterface {
         Result<Enrollment> res = registrationService.adminOverrideEnroll(stuId, secId, currentUserId, reason);
         if (res.isOk()) {
             System.out.println("Student forcefully enrolled. Status: " + res.get().getStatus());
+        } else {
+            System.out.println("Error: " + res.getError());
+        }
+    }
+
+    private void editCourse() {
+        // Purpose: Minimal course edit for Admin (title/credits)
+        System.out.print("Course Code to edit: ");
+        String code = scanner.nextLine();
+        if (code == null || code.isBlank()) {
+            System.out.println("Code is required.");
+            return;
+        }
+        System.out.print("New Title (leave blank to keep): ");
+        String newTitle = scanner.nextLine();
+
+        System.out.print("New Credits (leave blank to keep): ");
+        String newCreditsStr = scanner.nextLine();
+        Integer newCredits = null;
+        if (!newCreditsStr.isBlank()) {
+            try {
+                newCredits = Integer.parseInt(newCreditsStr);
+            } catch (NumberFormatException e) {
+                System.out.println("Invalid credits. Aborting edit.");
+                return;
+            }
+        }
+
+        Result<Course> res = catalogService.updateCourse(code, newTitle, newCredits);
+        if (res.isOk()) {
+            Course c = res.get();
+            System.out.printf("Updated: %s -> title='%s', credits=%d%n", c.getCode(), c.getTitle(), c.getCredits());
         } else {
             System.out.println("Error: " + res.getError());
         }
