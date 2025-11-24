@@ -74,16 +74,22 @@ public class Section implements Schedulable {
 
     //Helper methods
     public boolean isFull() {
-        long enrolledCount = roster.stream()
-                .filter(e -> e.getStatus() == Enrollment.EnrollmentStatus.ENROLLED)
-                .count();
+        int enrolledCount = 0;
+        for (Enrollment e : roster) {
+            if (e.getStatus() == Enrollment.EnrollmentStatus.ENROLLED) {
+                enrolledCount++;
+            }
+        }
         return enrolledCount >= capacity;
     }
 
     public boolean isWaitlistFull() {
-        long waitlistedCount = roster.stream()
-                .filter(e -> e.getStatus() == Enrollment.EnrollmentStatus.WAITLISTED)
-                .count();
+        int waitlistedCount = 0;
+        for (Enrollment e : roster) {
+            if (e.getStatus() == Enrollment.EnrollmentStatus.WAITLISTED) {
+                waitlistedCount++;
+            }
+        }
         return waitlistedCount >= waitlistCapacity;
     }
 

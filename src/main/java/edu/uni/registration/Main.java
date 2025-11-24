@@ -52,7 +52,7 @@ public class Main {
             if ("2".equals(mode)) {
                 System.out.println("Launching GUI...");
                 SwingUtilities.invokeLater(() -> {
-                    new SimpleGui(regService, catalogService).setVisible(true);
+                    new SimpleGui(regService, catalogService, gradingService).setVisible(true);
                 });
             } else {
                 CommandLineInterface cli = new CommandLineInterface(regService, catalogService, gradingService);
@@ -91,6 +91,8 @@ public class Main {
         for (Student s : Arrays.asList(s1, s2, s3, s4, s5, s6)) {
             sRepo.save(s);
             pRepo.save(s); // Save as Person for login lookup
+            // Save the student's transcript to the repository so it can be retrieved later
+            tRepo.save(s.getTranscript());
         }
 
         // --- 2. Courses (6 Courses with Prerequisites) ---
@@ -123,18 +125,18 @@ public class Main {
         Section pastCs102 = new Section("PAST-CS102", cs102, "Spring 2023", 50);
 
         // S3 has passed CS101 -> Can take CS102
-        Transcript t3 = new Transcript(s3);
+        Transcript t3 = s3.getTranscript();
         t3.addEntry(new TranscriptEntry(pastCs101, Grade.B));
         tRepo.save(t3);
 
         // S4 has passed CS101 and CS102 -> Can take CS201
-        Transcript t4 = new Transcript(s4);
+        Transcript t4 = s4.getTranscript();
         t4.addEntry(new TranscriptEntry(pastCs101, Grade.A));
         t4.addEntry(new TranscriptEntry(pastCs102, Grade.A));
         tRepo.save(t4);
         
         // S6 has passed MATH101 -> Can take MATH102 or PHYS101
-        Transcript t6 = new Transcript(s6);
+        Transcript t6 = s6.getTranscript();
         t6.addEntry(new TranscriptEntry(pastMath101, Grade.C));
         tRepo.save(t6);
 

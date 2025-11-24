@@ -96,6 +96,7 @@ public class CommandLineInterface {
             System.out.println("2. Enroll in Section");
             System.out.println("3. Drop Section");
             System.out.println("4. View Schedule");
+            System.out.println("5. View Transcript");
             System.out.println("0. Logout");
             System.out.print("Select action: ");
             
@@ -144,9 +145,37 @@ public class CommandLineInterface {
                         System.out.println("Error: " + scheduleRes.getError());
                     }
                     break;
+                case "5":
+                    viewTranscript();
+                    break;
                 default:
                     System.out.println("Invalid option.");
             }
+        }
+    }
+
+    private void viewTranscript() {
+        Result<Transcript> res = registrationService.getTranscript(currentUserId);
+        if (res.isOk()) {
+            Transcript t = res.get();
+            System.out.println("\n=== UNOFFICIAL TRANSCRIPT ===");
+            System.out.println("Student: " + t.getStudent().getFullName() + " (" + t.getStudent().getId() + ")");
+            System.out.println("Major: " + t.getStudent().getMajor());
+            System.out.println("--------------------------------------------------");
+            System.out.printf("%-10s %-20s %-8s %-5s%n", "Course", "Term", "Credits", "Grade");
+            System.out.println("--------------------------------------------------");
+            
+            for (TranscriptEntry e : t.getEntries()) {
+                System.out.printf("%-10s %-20s %-8d %-5s%n",
+                        e.getSection().getCourse().getCode(),
+                        e.getSection().getTerm(),
+                        e.getCredits(),
+                        e.getGrade());
+            }
+            System.out.println("--------------------------------------------------");
+            System.out.printf("Total Credits: %d | GPA: %.2f%n", t.getTotalCredits(), t.getGpa());
+        } else {
+            System.out.println("Error retrieving transcript: " + res.getError());
         }
     }
 
@@ -255,7 +284,9 @@ public class CommandLineInterface {
             System.out.println("\n=== ADMIN MENU (" + currentUserId + ") ===");
             System.out.println("1. Create Course");
             System.out.println("2. Create Section");
-            System.out.println("3. Override Capacity");
+            System.out.println("3. Assign Instructor");
+            System.out.println("4. Override Capacity");
+            System.out.println("5. Override Enrollment (Force Add)");
             System.out.println("0. Logout");
             System.out.print("Select action: ");
 
@@ -264,41 +295,127 @@ public class CommandLineInterface {
 
             switch (choice) {
                 case "1":
-                    System.out.print("Code: ");
-                    String code = scanner.nextLine();
-                    System.out.print("Title: ");
-                    String title = scanner.nextLine();
-                    System.out.print("Credits: ");
-                    int credits = Integer.parseInt(scanner.nextLine());
-                    Result<Course> cRes = catalogService.createCourse(code, title, credits);
-                    if(cRes.isOk()) System.out.println("Course created.");
-                    else System.out.println("Error: " + cRes.getError());
+                    createCourse();
                     break;
                 case "2":
-                    System.out.print("Section ID: ");
-                    String secId = scanner.nextLine();
-                    System.out.print("Course Code: ");
-                    String cCode = scanner.nextLine();
-                    // In real CLI we would fetch the course obj first
-                    // For demo simplicity, we assume course exists or user knows flow
-                    System.out.println("... (Mocking course lookup) ...");
-                    // Assuming we found the course for code cCode
-                    // Course c = courseRepo.findById(cCode)...
-                    System.out.println("Feature simplified for demo. Please add data via DataLoader.");
+                    createSection();
                     break;
                 case "3":
-                    System.out.print("Section ID: ");
-                    String sId = scanner.nextLine();
-                    System.out.print("New Capacity: ");
-                    int cap = Integer.parseInt(scanner.nextLine());
-                    System.out.print("Reason: ");
-                    String reason = scanner.nextLine();
-                    
-                    Result<Void> ovrRes = catalogService.adminOverrideCapacity(sId, cap, currentUserId, reason);
-                    if (ovrRes.isOk()) System.out.println("Capacity updated.");
-                    else System.out.println("Failed: " + ovrRes.getError());
+                    assignInstructor();
                     break;
+                case "4":
+                    overrideCapacity();
+                    break;
+                case "5":
+                    forceEnroll();
+                    break;
+                default:
+                    System.out.println("Invalid option.");
             }
+        }
+    }
+
+    private void createCourse() {
+        System.out.print("Code: ");
+        String code = scanner.nextLine();
+        System.out.print("Title: ");
+        String title = scanner.nextLine();
+        System.out.print("Credits: ");
+        try {
+            int credits = Integer.parseInt(scanner.nextLine());
+            Result<Course> cRes = catalogService.createCourse(code, title, credits);
+            if(cRes.isOk()) System.out.println("Course created.");
+            else System.out.println("Error: " + cRes.getError());
+        } catch (NumberFormatException e) {
+            System.out.println("Invalid credits.");
+        }
+    }
+
+    private void createSection() {
+        System.out.print("Section ID: ");
+        String secId = scanner.nextLine();
+        System.out.print("Course Code: ");
+        String cCode = scanner.nextLine();
+        System.out.print("Term (e.g. Fall 2023): ");
+        String term = scanner.nextLine();
+        System.out.print("Capacity: ");
+        try {
+            int cap = Integer.parseInt(scanner.nextLine());
+            
+            // Need to find the course object first. 
+            // CatalogService.search is list-based, let's use a hack or better, add findByCode to service.
+            // For now, we search by code and pick first.
+            CourseQuery q = new CourseQuery();
+            q.setCode(cCode);
+            Result<List<Course>> search = catalogService.search(q);
+            
+            Course targetCourse = null;
+            if(search.isOk() && !search.get().isEmpty()) {
+                 // Exact match check
+                 targetCourse = search.get().stream()
+                         .filter(c -> c.getCode().equalsIgnoreCase(cCode))
+                         .findFirst()
+                         .orElse(null);
+            }
+            
+            if (targetCourse == null) {
+                System.out.println("Course not found: " + cCode);
+                return;
+            }
+
+            Result<Section> sRes = catalogService.createSection(secId, targetCourse, term, cap);
+            if (sRes.isOk()) System.out.println("Section created.");
+            else System.out.println("Error: " + sRes.getError());
+
+        } catch (NumberFormatException e) {
+            System.out.println("Invalid capacity.");
+        }
+    }
+
+    private void assignInstructor() {
+        System.out.print("Section ID: ");
+        String secId = scanner.nextLine();
+        System.out.print("Instructor ID: ");
+        String insId = scanner.nextLine();
+
+        Result<Void> res = catalogService.assignInstructor(secId, insId);
+        if (res.isOk()) {
+            System.out.println("Instructor assigned successfully.");
+        } else {
+            System.out.println("Error: " + res.getError());
+        }
+    }
+
+    private void overrideCapacity() {
+        System.out.print("Section ID: ");
+        String sId = scanner.nextLine();
+        System.out.print("New Capacity: ");
+        try {
+            int cap = Integer.parseInt(scanner.nextLine());
+            System.out.print("Reason: ");
+            String reason = scanner.nextLine();
+            
+            Result<Void> ovrRes = catalogService.adminOverrideCapacity(sId, cap, currentUserId, reason);
+            if (ovrRes.isOk()) System.out.println("Capacity updated.");
+            else System.out.println("Failed: " + ovrRes.getError());
+        } catch (NumberFormatException e) {
+            System.out.println("Invalid capacity.");
+        }
+    }
+
+    private void forceEnroll() {
+        System.out.print("Student ID: ");
+        String stuId = scanner.nextLine();
+        System.out.print("Section ID: ");
+        String secId = scanner.nextLine();
+        System.out.print("Reason: ");
+        String reason = scanner.nextLine();
+
+        Result<Enrollment> res = registrationService.adminOverrideEnroll(stuId, secId, currentUserId, reason);
+        if (res.isOk()) {
+            System.out.println("Student forcefully enrolled. Status: " + res.get().getStatus());
+        } else {
+            System.out.println("Error: " + res.getError());
         }
     }
 }
