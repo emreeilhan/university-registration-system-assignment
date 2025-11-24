@@ -81,3 +81,7 @@ When you run the app, the following data is automatically loaded:
 3. Enroll in `SEC101-A`.
 4. View Schedule.
 
+
+
+
+
