@@ -50,6 +50,7 @@ public class RegistrationServiceImpl implements RegistrationService {
 
     @Override
     public Result<Enrollment> enrollStudentInSection(String studentId, String sectionId) {
+        // Purpose: Enroll a student only after all validations pass (fail-fast order).
         if (studentId == null || sectionId == null) {
             return Result.fail("Student ID and Section ID cannot be null");
         }
@@ -66,35 +67,35 @@ public class RegistrationServiceImpl implements RegistrationService {
         }
         Section section = sectionOpt.get();
 
-        // Check for time conflicts first (Business Rule #6)
-        Section conflicting = findFirstConflictSection(student, section);
-        if (conflicting != null) {
-            return Result.fail("Student " + studentId +
-                            " has a time conflict between section " + sectionId +
-                            " and section " + conflicting.getId());
-        }
-
-        Enrollment enrollment = new Enrollment(student, section);
-
-        // Handle capacity and waitlists
-        if (section.isFull()) {
-             if (section.isWaitlistFull()) {
-                 return Result.fail("Section and waitlist are full");
-             }
-            enrollment.setStatus(EnrollmentStatus.WAITLISTED);
-        } else {
-            enrollment.setStatus(EnrollmentStatus.ENROLLED);
-        }
-        
-        // Prerequisites check (must be done before finalizing enrollment)
         Optional<Transcript> transcriptOpt = transcriptRepository.findById(student.getId());
         if (transcriptOpt.isEmpty()) {
-             return Result.fail("Transcript not found for student: " + student.getId());
+            // Purpose: Prerequisite checks require a transcript; fail if unavailable.
+            return Result.fail("Transcript not found for student: " + student.getId());
         }
         Transcript transcript = transcriptOpt.get();
 
         if (!prerequisiteValidator.hasCompletedPrerequisites(transcript, section.getCourse())) {
             return Result.fail("Student has not completed prerequisites.");
+        }
+
+        
+        Section conflicting = findFirstConflictSection(student, section);
+        if (conflicting != null) {
+            // Purpose: Defer expensive conflict detection until prerequisites pass.
+            return Result.fail("Student " + studentId +
+                    " has a time conflict between section " + sectionId +
+                    " and section " + conflicting.getId());
+        }
+
+        Enrollment enrollment = new Enrollment(student, section);
+        if (section.isFull()) {
+            if (section.isWaitlistFull()) {
+                return Result.fail("Section and waitlist are full");
+            }
+            enrollment.setStatus(EnrollmentStatus.WAITLISTED);
+            
+        } else {
+            enrollment.setStatus(EnrollmentStatus.ENROLLED);
         }
 
         section.addEnrollment(enrollment);
@@ -200,14 +201,19 @@ public class RegistrationServiceImpl implements RegistrationService {
         return Result.ok(tOpt.get());
     }
 
-    // Helper to find conflicts
-    // It loops through all sections to check enrollment and time overlap.
+    /**
+     * Finds the first section that conflicts with the target section for the given student.
+     * A conflict occurs if the student is enrolled in another section with overlapping meeting times.
+     *
+     * @param student the student to check conflicts for
+     * @param target the section to check against
+     * @return the conflicting section if found, null otherwise
+     */
     private Section findFirstConflictSection(Student student, Section target) {
         List<Section> all = sectionRepository.findAll();
 
         for (Section existing : all) {
             boolean enrolledHere = false;
-            // Check if student is in this section
             for (Enrollment e : existing.getRoster()) {
                 if (e.getStudent().getId().equals(student.getId()) &&
                         e.getStatus() == EnrollmentStatus.ENROLLED) {
@@ -218,7 +224,7 @@ public class RegistrationServiceImpl implements RegistrationService {
 
             if (!enrolledHere) continue;
 
-            // If enrolled, check for time overlap
+            // Check time conflict
             for (TimeSlot a : existing.getMeetingTimes()) {
                 for (TimeSlot b : target.getMeetingTimes()) {
                     if (a.overlaps(b)) {
