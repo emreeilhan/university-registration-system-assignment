@@ -1,9 +1,8 @@
 package edu.uni.registration.model;
 
 /**
- * Base class for all people in the university system.
- * This includes students, instructors, and admins.
- * Each person has a unique ID, name, and email address.
+ * Abstract base class for all system users (Student, Instructor, Admin).
+ * Keeps common fields like name and email to avoid duplication.
  */
 public abstract class Person {
 
@@ -12,14 +11,6 @@ public abstract class Person {
     private String lastName;
     private String email;
 
-    /**
-     * Creates a new person with the given information.
-     *
-     * @param id the unique identifier for this person
-     * @param firstName the person's first name
-     * @param lastName the person's last name
-     * @param email the person's email address
-     */
     public Person(String id, String firstName, String lastName, String email) {
         this.id = id;
         this.firstName = firstName;
@@ -42,7 +33,7 @@ public abstract class Person {
      */
     public abstract String displayProfile();
 
-    // Getters and Setters
+    // Getters and Setters - standard boilerplate
     public String getId() {
         return id;
     }

@@ -69,9 +69,7 @@ public class CommandLineInterface {
     private void login(String role) {
         System.out.print("Enter your ID: ");
         String id = scanner.nextLine();
-        // In a real app, we would verify existence here.
-        // For this demo, we assume the ID is valid if it exists in our mock data,
-        // or we just proceed to show the menu.
+        // For this assignment, we trust the ID exists or just mock the login.
         
         this.currentUserId = id;
         this.currentUserRole = role;
@@ -107,11 +105,11 @@ public class CommandLineInterface {
             
             switch (choice) {
                 case "1":
-                    // Purpose: Provide both simple and advanced search capabilities
-                    // Consider extracting this logic into a separate file for better maintainability.
+                    // Simple search logic
                     System.out.print("Advanced search? (y/N): ");
                     String adv = scanner.nextLine();
                     if ("y".equalsIgnoreCase(adv)) {
+                        
                         CourseQuery q = new CourseQuery();
                         System.out.print("Code (exact/contains): ");
                         String code = scanner.nextLine();
@@ -120,7 +118,8 @@ public class CommandLineInterface {
                         System.out.print("Title (contains): ");
                         String title = scanner.nextLine();
                         if (!title.isBlank()) q.setTitle(title);
-
+                        
+                        // ... parsing other fields
                         System.out.print("Min Credits (blank to skip): ");
                         String minC = scanner.nextLine();
                         if (!minC.isBlank()) {

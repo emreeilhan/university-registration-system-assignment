@@ -66,6 +66,7 @@ public class RegistrationServiceImpl implements RegistrationService {
         }
         Section section = sectionOpt.get();
 
+        // Check for time conflicts first (Business Rule #6)
         Section conflicting = findFirstConflictSection(student, section);
         if (conflicting != null) {
             return Result.fail("Student " + studentId +
@@ -75,6 +76,7 @@ public class RegistrationServiceImpl implements RegistrationService {
 
         Enrollment enrollment = new Enrollment(student, section);
 
+        // Handle capacity and waitlists
         if (section.isFull()) {
              if (section.isWaitlistFull()) {
                  return Result.fail("Section and waitlist are full");
@@ -84,9 +86,9 @@ public class RegistrationServiceImpl implements RegistrationService {
             enrollment.setStatus(EnrollmentStatus.ENROLLED);
         }
         
+        // Prerequisites check (must be done before finalizing enrollment)
         Optional<Transcript> transcriptOpt = transcriptRepository.findById(student.getId());
         if (transcriptOpt.isEmpty()) {
-             // Assuming every student should have a transcript, or creating one if missing
              return Result.fail("Transcript not found for student: " + student.getId());
         }
         Transcript transcript = transcriptOpt.get();
@@ -198,19 +200,14 @@ public class RegistrationServiceImpl implements RegistrationService {
         return Result.ok(tOpt.get());
     }
 
-    /**
-     * Finds the first section that conflicts with the target section for the given student.
-     * A conflict occurs if the student is enrolled in another section with overlapping meeting times.
-     *
-     * @param student the student to check conflicts for
-     * @param target the section to check against
-     * @return the conflicting section if found, null otherwise
-     */
+    // Helper to find conflicts
+    // It loops through all sections to check enrollment and time overlap.
     private Section findFirstConflictSection(Student student, Section target) {
         List<Section> all = sectionRepository.findAll();
 
         for (Section existing : all) {
             boolean enrolledHere = false;
+            // Check if student is in this section
             for (Enrollment e : existing.getRoster()) {
                 if (e.getStudent().getId().equals(student.getId()) &&
                         e.getStatus() == EnrollmentStatus.ENROLLED) {
@@ -221,7 +218,7 @@ public class RegistrationServiceImpl implements RegistrationService {
 
             if (!enrolledHere) continue;
 
-            // Check time conflict
+            // If enrolled, check for time overlap
             for (TimeSlot a : existing.getMeetingTimes()) {
                 for (TimeSlot b : target.getMeetingTimes()) {
                     if (a.overlaps(b)) {

@@ -5,26 +5,16 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Represents a student in the university system.
- * Students can enroll in sections, have a transcript with grades,
- * and track their current course enrollments.
+ * Student entity that extends Person.
+ * Holds academic info like major, year, and their active enrollments.
  */
 public class Student extends Person {
     private String major;
     private int year;
     private final Transcript transcript;
+    // Using List here to keep track of sections the student is currently in
     private final List<Enrollment> currentEnrollments;
 
-    /**
-     * Creates a new student with the given information.
-     *
-     * @param id the unique student ID
-     * @param firstName the student's first name
-     * @param lastName the student's last name
-     * @param email the student's email
-     * @param major the student's major field of study
-     * @param year the student's year (1-4 typically)
-     */
     public Student(String id,String firstName,String lastName,String email,String major,int year) {
         super(id,firstName,lastName,email);
         this.major = major;
@@ -59,56 +49,27 @@ public class Student extends Person {
                 transcript.getGpa());
     }
 
-    /**
-     * Gets the student's major field of study.
-     *
-     * @return the major name
-     */
+    // Standard getters/setters for student details
     public String getMajor() {
         return major;
     }
 
-    /**
-     * Gets the student's year level.
-     *
-     * @return the year (1-4 typically)
-     */
     public int getYear() {
         return year;
     }
 
-    /**
-     * Gets the student's transcript containing all completed courses and grades.
-     *
-     * @return the transcript object
-     */
     public Transcript getTranscript() {
         return transcript;
     }
 
-    /**
-     * Gets a read-only list of the student's current enrollments.
-     *
-     * @return an unmodifiable list of enrollments
-     */
     public List<Enrollment> getCurrentEnrollments() {
         return Collections.unmodifiableList(currentEnrollments);
     }
 
-    /**
-     * Sets the student's major.
-     *
-     * @param major the new major name
-     */
     public void setMajor(String major) {
         this.major = major;
     }
 
-    /**
-     * Sets the student's year level.
-     *
-     * @param year the new year level
-     */
     public void setYear(int year) {
         this.year = year;
     }
