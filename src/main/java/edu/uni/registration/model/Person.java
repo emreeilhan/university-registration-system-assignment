@@ -1,8 +1,8 @@
 package edu.uni.registration.model;
 
 /**
- * Abstract base class for all system users (Student, Instructor, Admin).
- * Keeps common fields like name and email to avoid duplication.
+ * Base class for all users (Student, Instructor, Admin).
+ * Just holds common stuff like name and email.
  */
 public abstract class Person {
 
@@ -19,17 +19,12 @@ public abstract class Person {
     }
 
     /**
-     * Returns the role of this person (STUDENT, INSTRUCTOR, or ADMIN).
-     *
-     * @return a string representing the person's role
+     * Returns the person's role (STUDENT, INSTRUCTOR, or ADMIN).
      */
     public abstract String role();
     
     /**
-     * Returns a formatted string showing the person's profile information.
-     * Each subclass provides different details based on their role.
-     *
-     * @return a formatted profile string
+     * Returns a formatted profile string. Each subclass formats it differently.
      */
     public abstract String displayProfile();
 

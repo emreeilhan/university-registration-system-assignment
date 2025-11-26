@@ -13,8 +13,7 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Implementation of the RegistrationService interface.
- * Handles student enrollment, dropping, schedule viewing, and admin overrides.
+ * RegistrationService implementation. Handles enrollments, drops, schedules, and admin overrides.
  */
 public class RegistrationServiceImpl implements RegistrationService {
 
@@ -25,16 +24,6 @@ public class RegistrationServiceImpl implements RegistrationService {
     private final PersonRepository personRepository;
     private final List<AdminOverrideLog> overrideLogs;
 
-    /**
-     * Creates a new RegistrationServiceImpl with the required repositories and validators.
-     *
-     * @param studentRepository repository for student data
-     * @param sectionRepository repository for section data
-     * @param prerequisiteValidator validator for checking prerequisites
-     * @param transcriptRepository repository for transcript data
-     * @param personRepository repository for person data
-     * @throws IllegalArgumentException if any parameter is null
-     */
     public RegistrationServiceImpl(StudentRepository studentRepository,
                                SectionRepository sectionRepository,PrerequisiteValidator prerequisiteValidator, TranscriptRepository transcriptRepository, PersonRepository personRepository) {
         if (studentRepository == null || sectionRepository == null  || prerequisiteValidator == null || transcriptRepository == null || personRepository == null) {
@@ -202,12 +191,7 @@ public class RegistrationServiceImpl implements RegistrationService {
     }
 
     /**
-     * Finds the first section that conflicts with the target section for the given student.
-     * A conflict occurs if the student is enrolled in another section with overlapping meeting times.
-     *
-     * @param student the student to check conflicts for
-     * @param target the section to check against
-     * @return the conflicting section if found, null otherwise
+     * Finds first section with overlapping times for this student. Returns null if no conflict.
      */
     private Section findFirstConflictSection(Student student, Section target) {
         List<Section> all = sectionRepository.findAll();
@@ -269,11 +253,6 @@ public class RegistrationServiceImpl implements RegistrationService {
         return Result.ok(enrollment);
     }
 
-    /**
-     * Gets a copy of all admin override logs for audit purposes.
-     *
-     * @return a list of admin override logs
-     */
     public List<AdminOverrideLog> getOverrideLogs() {
         return new ArrayList<>(overrideLogs);
     }

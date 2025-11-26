@@ -16,8 +16,7 @@ import edu.uni.registration.util.Result;
 import java.util.Optional;
 
 /**
- * Implementation of the GradingService interface.
- * Handles posting grades and calculating student GPAs.
+ * GradingService implementation. Handles posting grades and calculating GPAs.
  */
 public class GradingServiceImpl implements GradingService {
     private final StudentRepository studentRepository;
@@ -25,15 +24,6 @@ public class GradingServiceImpl implements GradingService {
     private final EnrollmentRepository enrollmentRepository;
     private final TranscriptRepository transcriptRepository;
 
-    /**
-     * Creates a new GradingServiceImpl with the required repositories.
-     *
-     * @param studentRepository repository for student data
-     * @param sectionRepository repository for section data
-     * @param enrollmentRepository repository for enrollment data
-     * @param transcriptRepository repository for transcript data
-     * @throws IllegalArgumentException if any parameter is null
-     */
     public GradingServiceImpl(StudentRepository studentRepository, SectionRepository sectionRepository, EnrollmentRepository enrollmentRepository, TranscriptRepository transcriptRepository) {
         if (studentRepository == null || sectionRepository == null || enrollmentRepository == null || transcriptRepository == null) {
             throw new IllegalArgumentException("Repositories cannot be null");

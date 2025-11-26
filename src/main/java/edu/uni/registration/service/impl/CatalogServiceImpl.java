@@ -18,8 +18,7 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Implementation of the CatalogService interface.
- * Handles course and section creation, searching, instructor assignment, and admin overrides.
+ * CatalogService implementation. Handles courses, sections, searching, and admin overrides.
  */
 public class CatalogServiceImpl implements CatalogService {
     private final CourseRepository courseRepository;
@@ -27,14 +26,6 @@ public class CatalogServiceImpl implements CatalogService {
     private final PersonRepository personRepository;
     private final List<AdminOverrideLog> overrideLogs;
 
-    /**
-     * Creates a new CatalogServiceImpl with the required repositories.
-     *
-     * @param courseRepository repository for course data
-     * @param sectionRepository repository for section data
-     * @param personRepository repository for person data
-     * @throws IllegalArgumentException if any parameter is null
-     */
     public CatalogServiceImpl(CourseRepository courseRepository, SectionRepository sectionRepository, PersonRepository personRepository) {
         if (courseRepository == null || sectionRepository == null || personRepository == null) {
             throw new IllegalArgumentException("Repositories cannot be null");
@@ -153,11 +144,6 @@ public class CatalogServiceImpl implements CatalogService {
                 .orElse(Result.fail("Instructor not found"));
     }
 
-    /**
-     * Gets a copy of all admin override logs for audit purposes.
-     *
-     * @return a list of admin override logs
-     */
     public List<AdminOverrideLog> getOverrideLogs() {
         return new ArrayList<>(overrideLogs);
     }

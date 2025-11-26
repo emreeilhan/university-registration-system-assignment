@@ -1,7 +1,6 @@
 package edu.uni.registration.service;
 
 import edu.uni.registration.model.Course;
-import edu.uni.registration.model.Instructor;
 import edu.uni.registration.model.Section;
 import edu.uni.registration.util.CourseQuery;
 import edu.uni.registration.util.Result;
@@ -9,78 +8,30 @@ import edu.uni.registration.util.Result;
 import java.util.List;
 
 /**
- * Service interface for managing the course catalog.
- * Handles creation of courses/sections, searching, and instructor assignment.
+ * Service for managing the course catalog. Handles courses, sections, searching, and instructor assignment.
  */
 public interface CatalogService {
 
     /**
-     * Searches for courses based on various criteria defined in CourseQuery.
-     * Supports filtering by code, title, credits, instructor, and time window.
-     *
-     * @param query The search criteria object.
-     * @return A Result containing a list of matching courses.
+     * Searches courses by code, title, credits, instructor, or time window.
      */
     Result<List<Course>> search(CourseQuery query);
 
-    /**
-     * Creates a new course in the catalog.
-     *
-     * @param code    Unique course code (e.g., "CS101").
-     * @param title   Course title.
-     * @param credits Number of credits.
-     * @return A Result containing the created Course.
-     */
     Result<Course> createCourse(String code, String title, int credits);
 
-    /**
-     * Creates a new section offering for a course.
-     *
-     * @param id       Unique section ID (e.g., "SEC1").
-     * @param course   The parent course.
-     * @param term     The term (e.g., "Fall").
-     * @param capacity Maximum number of students.
-     * @return A Result containing the created Section.
-     */
     Result<Section> createSection(String id, Course course, String term, int capacity);
 
-    /**
-     * Assigns an instructor to a specific section.
-     *
-     * @param sectionId    The ID of the section.
-     * @param instructorId The ID of the instructor to assign.
-     * @return A Result indicating success or failure.
-     */
     Result<Void> assignInstructor(String sectionId, String instructorId);
 
     /**
-     * Allows an admin to manually override the capacity of a section.
-     * Useful for opening extra seats in special cases. Logged for audit.
-     *
-     * @param sectionId   The ID of the section.
-     * @param newCapacity The new capacity value.
-     * @param adminId     The ID of the admin performing the action.
-     * @param reason      Reason for the change.
-     * @return A Result indicating success or failure.
+     * Admin override: changes section capacity. Logged for audit.
      */
     Result<Void> adminOverrideCapacity(String sectionId, int newCapacity, String adminId, String reason);
 
-    /**
-     * Retrieves the list of sections assigned to a specific instructor.
-     *
-     * @param instructorId The ID of the instructor.
-     * @return A Result containing the list of sections.
-     */
     Result<List<Section>> getInstructorSections(String instructorId);
 
     /**
-     * Updates a course's mutable fields. Any null argument will be ignored.
-     * Purpose: allow Admin to edit basic course info from CLI.
-     *
-     * @param code        Existing course code to update (identifier).
-     * @param newTitle    New title (nullable; ignored if null or blank).
-     * @param newCredits  New credits (nullable; ignored if null).
-     * @return Result containing the updated Course or an error.
+     * Updates course fields. Null args are ignored. Used by Admin CLI.
      */
     Result<Course> updateCourse(String code, String newTitle, Integer newCredits);
 }

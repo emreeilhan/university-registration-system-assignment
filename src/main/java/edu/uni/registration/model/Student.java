@@ -5,8 +5,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Student entity that extends Person.
- * Holds academic info like major, year, and their active enrollments.
+ * Student entity. Holds major, year, enrollments, and transcript.
  */
 public class Student extends Person {
     private String major;
@@ -23,22 +22,11 @@ public class Student extends Person {
         this.currentEnrollments = new ArrayList<>();
     }
 
-    /**
-     * Returns the role of this person, which is always "STUDENT".
-     *
-     * @return the string "STUDENT"
-     */
     @Override
     public String role() {
         return "STUDENT";
     }
     
-    /**
-     * Returns a formatted string showing the student's profile,
-     * including name, major, year, number of enrollments, and GPA.
-     *
-     * @return a formatted profile string
-     */
     @Override
     public String displayProfile() {
         return String.format("Student Profile: %s\nMajor: %s\nYear: %d\nCurrent Enrollments: %d\nGPA: %.2f",
@@ -49,7 +37,6 @@ public class Student extends Person {
                 transcript.getGpa());
     }
 
-    // Standard getters/setters for student details
     public String getMajor() {
         return major;
     }
@@ -74,12 +61,6 @@ public class Student extends Person {
         this.year = year;
     }
 
-    /**
-     * Adds an enrollment to the student's current enrollments list.
-     *
-     * @param enrollment the enrollment to add
-     * @throws IllegalArgumentException if enrollment is null
-     */
     public void addEnrollment(Enrollment enrollment) {
         if (enrollment == null) {
             throw new IllegalArgumentException("Enrollment cannot be null");
@@ -88,12 +69,6 @@ public class Student extends Person {
         currentEnrollments.add(enrollment);
     }
 
-    /**
-     * Removes an enrollment from the student's current enrollments.
-     *
-     * @param enrollment the enrollment to remove
-     * @return true if the enrollment was removed, false if it wasn't found
-     */
     public boolean removeEnrollment(Enrollment enrollment) {
         if (enrollment == null) {
             return false;
