@@ -28,7 +28,6 @@ public abstract class Person {
      */
     public abstract String displayProfile();
 
-    // Getters and Setters - standard boilerplate
     public String getId() {
         return id;
     }

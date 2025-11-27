@@ -39,7 +39,6 @@ public class RegistrationServiceImpl implements RegistrationService {
 
     @Override
     public Result<Enrollment> enrollStudentInSection(String studentId, String sectionId) {
-        // Purpose: Enroll a student only after all validations pass (fail-fast order).
         if (studentId == null || sectionId == null) {
             return Result.fail("Student ID and Section ID cannot be null");
         }
@@ -58,7 +57,6 @@ public class RegistrationServiceImpl implements RegistrationService {
 
         Optional<Transcript> transcriptOpt = transcriptRepository.findById(student.getId());
         if (transcriptOpt.isEmpty()) {
-            // Purpose: Prerequisite checks require a transcript; fail if unavailable.
             return Result.fail("Transcript not found for student: " + student.getId());
         }
         Transcript transcript = transcriptOpt.get();
@@ -70,7 +68,7 @@ public class RegistrationServiceImpl implements RegistrationService {
         
         Section conflicting = findFirstConflictSection(student, section);
         if (conflicting != null) {
-            // Purpose: Defer expensive conflict detection until prerequisites pass.
+            // Check conflicts last to avoid expensive checks if prereqs fail
             return Result.fail("Student " + studentId +
                     " has a time conflict between section " + sectionId +
                     " and section " + conflicting.getId());
@@ -145,8 +143,6 @@ public class RegistrationServiceImpl implements RegistrationService {
         List<Section> allSections = sectionRepository.findAll();
         List<Section> result = new ArrayList<>();
 
-        // Using a standard loop to filter sections logic manually
-        // Check if student is enrolled in the section
         for (Section section : allSections) {
 
             if (term != null && !term.isBlank()) {

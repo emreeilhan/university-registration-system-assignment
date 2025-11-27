@@ -107,8 +107,6 @@ public class CommandLineInterface {
             
             switch (choice) {
                 case "1":
-                    // Purpose: Provide both simple and advanced search capabilities
-                    // Consider extracting this logic into a separate file for better maintainability.
                     System.out.print("Advanced search? (y/N): ");
                     String adv = scanner.nextLine();
                     if ("y".equalsIgnoreCase(adv)) {
@@ -482,7 +480,6 @@ public class CommandLineInterface {
     }
 
     private void editCourse() {
-        // Purpose: Minimal course edit for Admin (title/credits)
         System.out.print("Course Code to edit: ");
         String code = scanner.nextLine();
         if (code == null || code.isBlank()) {
