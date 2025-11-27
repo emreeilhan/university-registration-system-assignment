@@ -99,7 +99,7 @@ class AdminWorkflowTest {
         // Normal enrollment should FAIL due to prereq
         Result<Enrollment> normalRes = registrationService.enrollStudentInSection("S1", "SEC-ADV");
         assertTrue(normalRes.isFail());
-        assertEquals("Student has not completed prerequisites.", normalRes.getError());
+        assertEquals("Prereqs not met", normalRes.getError());
 
         // Admin Override Enroll
         Result<Enrollment> forceRes = registrationService.adminOverrideEnroll("S1", "SEC-ADV", "A1", "Dean approved");

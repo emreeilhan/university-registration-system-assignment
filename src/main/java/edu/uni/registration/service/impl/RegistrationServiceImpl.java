@@ -17,115 +17,97 @@ import java.util.Optional;
  */
 public class RegistrationServiceImpl implements RegistrationService {
 
-    private final StudentRepository studentRepository;
-    private final SectionRepository sectionRepository;
-    private final PrerequisiteValidator prerequisiteValidator;
-    private final TranscriptRepository transcriptRepository;
-    private final PersonRepository personRepository;
-    private final List<AdminOverrideLog> overrideLogs;
+    private final StudentRepository studentRepo;
+    private final SectionRepository sectionRepo;
+    private final PrerequisiteValidator validator;
+    private final TranscriptRepository transcriptRepo;
+    private final PersonRepository personRepo;
+    private final List<AdminOverrideLog> logs;
 
-    public RegistrationServiceImpl(StudentRepository studentRepository,
-                               SectionRepository sectionRepository,PrerequisiteValidator prerequisiteValidator, TranscriptRepository transcriptRepository, PersonRepository personRepository) {
-        if (studentRepository == null || sectionRepository == null  || prerequisiteValidator == null || transcriptRepository == null || personRepository == null) {
-            throw new IllegalArgumentException("Repositories cannot be null");
-        }
-        this.studentRepository = studentRepository;
-        this.sectionRepository = sectionRepository;
-        this.prerequisiteValidator = prerequisiteValidator;
-        this.transcriptRepository = transcriptRepository;
-        this.personRepository = personRepository;
-        this.overrideLogs = new ArrayList<>();
+    public RegistrationServiceImpl(StudentRepository studentRepo,
+                               SectionRepository sectionRepo, PrerequisiteValidator validator, TranscriptRepository transcriptRepo, PersonRepository personRepo) {
+        this.studentRepo = studentRepo;
+        this.sectionRepo = sectionRepo;
+        this.validator = validator;
+        this.transcriptRepo = transcriptRepo;
+        this.personRepo = personRepo;
+        this.logs = new ArrayList<>();
     }
 
     @Override
-    public Result<Enrollment> enrollStudentInSection(String studentId, String sectionId) {
-        if (studentId == null || sectionId == null) {
-            return Result.fail("Missing Student ID or Section ID");
-        }
+    public Result<Enrollment> enrollStudentInSection(String sid, String secId) {
+        // Basic checks
+        if (sid == null || secId == null) return Result.fail("Missing ID");
 
-        Optional<Student> studentOpt = studentRepository.findById(studentId);
-        if (studentOpt.isEmpty()) {
-            return Result.fail("Cannot find student with ID: " + studentId);
-        }
-        Student student = studentOpt.get();
+        var sOpt = studentRepo.findById(sid);
+        if (sOpt.isEmpty()) return Result.fail("Student not found: " + sid);
+        Student s = sOpt.get();
 
-        Optional<Section> sectionOpt = sectionRepository.findById(sectionId);
-        if (sectionOpt.isEmpty()) {
-            return Result.fail("Cannot find section with ID: " + sectionId);
-        }
-        Section section = sectionOpt.get();
+        var secOpt = sectionRepo.findById(secId);
+        if (secOpt.isEmpty()) return Result.fail("Section not found: " + secId);
+        Section sec = secOpt.get();
 
-        Optional<Transcript> transcriptOpt = transcriptRepository.findById(student.getId());
-        if (transcriptOpt.isEmpty()) {
-            return Result.fail("No transcript record for student: " + student.getId());
-        }
-        Transcript transcript = transcriptOpt.get();
-
-        if (!prerequisiteValidator.hasCompletedPrerequisites(transcript, section.getCourse())) {
-            return Result.fail("Prerequisites not met for this course.");
-        }
-
+        var tOpt = transcriptRepo.findById(s.getId());
+        if (tOpt.isEmpty()) return Result.fail("No transcript for " + s.getId());
         
-        Section conflicting = findFirstConflictSection(student, section);
-        if (conflicting != null) {
-            // Check conflicts last to avoid expensive checks if prereqs fail
-            return Result.fail("Student " + studentId +
-                    " has a time conflict between section " + sectionId +
-                    " and section " + conflicting.getId());
+        // Prereq check
+        if (!validator.hasCompletedPrerequisites(tOpt.get(), sec.getCourse())) {
+            return Result.fail("Prereqs not met");
+        }
+        
+        // Time conflict?
+        Section conflict = findFirstConflictSection(s, sec);
+        if (conflict != null) {
+            return Result.fail("Time conflict with " + conflict.getId());
         }
 
-        Enrollment enrollment = new Enrollment(student, section);
-        if (section.isFull()) {
-            if (section.isWaitlistFull()) {
-                return Result.fail("Section and waitlist are full");
+        Enrollment enr = new Enrollment(s, sec);
+        
+        // Check capacity
+        if (sec.isFull()) {
+            if (sec.isWaitlistFull()) {
+                return Result.fail("Section/Waitlist full");
             }
-            enrollment.setStatus(EnrollmentStatus.WAITLISTED);
-            
+            enr.setStatus(EnrollmentStatus.WAITLISTED);
         } else {
-            enrollment.setStatus(EnrollmentStatus.ENROLLED);
+            enr.setStatus(EnrollmentStatus.ENROLLED);
         }
 
-        section.addEnrollment(enrollment);
-        return Result.ok(enrollment);
+        sec.addEnrollment(enr);
+        return Result.ok(enr);
     }
 
     @Override
-    public Result<Void> dropStudentInSection(String studentId, String sectionId) {
-        if (studentId == null || sectionId == null) return Result.fail("IDs cannot be null");
+    public Result<Void> dropStudentInSection(String sid, String secId) {
+        if (sid == null || secId == null) return Result.fail("IDs required");
 
-        Optional<Student> studentOpt = studentRepository.findById(studentId);
-        if (studentOpt.isEmpty()) return Result.fail("Student not found");
-        Student student = studentOpt.get();
-
-        Optional<Section> sectionOpt = sectionRepository.findById(sectionId);
-        if (sectionOpt.isEmpty()) return Result.fail("Section not found");
-        Section section = sectionOpt.get();
+        var sOpt = studentRepo.findById(sid);
+        if (sOpt.isEmpty()) return Result.fail("Student not found");
+        
+        var secOpt = sectionRepo.findById(secId);
+        if (secOpt.isEmpty()) return Result.fail("Section not found");
+        Section sec = secOpt.get();
 
         Enrollment target = null;
-
-        for (Enrollment e : section.getRoster()) {
-            if (e.getStudent().getId().equals(student.getId()) &&
+        for (Enrollment e : sec.getRoster()) {
+            if (e.getStudent().getId().equals(sid) &&
                     (e.getStatus() == EnrollmentStatus.ENROLLED || e.getStatus() == EnrollmentStatus.WAITLISTED)) {
                 target = e;
                 break;
             }
         }
 
-        if (target == null) {
-            return Result.fail("Student is not enrolled in this section");
-        }
+        if (target == null) return Result.fail("Not enrolled");
 
-        // Save the original status before dropping
-        EnrollmentStatus originalStatus = target.getStatus();
+        EnrollmentStatus oldStatus = target.getStatus();
         target.setStatus(EnrollmentStatus.DROPPED);
 
-        // Promote from waitlist if a seat opened (we dropped an ENROLLED student)
-        if (originalStatus == EnrollmentStatus.ENROLLED) {
-            // Find the first waitlisted student and promote them
-            for (Enrollment e : section.getRoster()) {
+        // Auto-promote waitlist
+        if (oldStatus == EnrollmentStatus.ENROLLED) {
+            for (Enrollment e : sec.getRoster()) {
                 if (e.getStatus() == EnrollmentStatus.WAITLISTED) {
                     e.setStatus(EnrollmentStatus.ENROLLED);
-                    break; // Only promote one student
+                    break;
                 }
             }
         }
@@ -136,11 +118,11 @@ public class RegistrationServiceImpl implements RegistrationService {
     @Override
     public Result<List<Section>> getCurrentSchedule(String studentId, String term) {
         if (studentId == null) return Result.fail("Student ID cannot be null");
-        Optional<Student> studentOpt = studentRepository.findById(studentId);
+        Optional<Student> studentOpt = studentRepo.findById(studentId);
         if (studentOpt.isEmpty()) return Result.fail("Student not found");
         Student student = studentOpt.get();
 
-        List<Section> allSections = sectionRepository.findAll();
+        List<Section> allSections = sectionRepo.findAll();
         List<Section> result = new ArrayList<>();
 
         for (Section section : allSections) {
@@ -172,11 +154,11 @@ public class RegistrationServiceImpl implements RegistrationService {
         if (studentId == null) return Result.fail("Student ID cannot be null");
         
         // Ensure student exists
-        if (studentRepository.findById(studentId).isEmpty()) {
+        if (studentRepo.findById(studentId).isEmpty()) {
             return Result.fail("Student not found: " + studentId);
         }
 
-        Optional<Transcript> tOpt = transcriptRepository.findById(studentId);
+        Optional<Transcript> tOpt = transcriptRepo.findById(studentId);
         if (tOpt.isEmpty()) {
             // If no transcript found (maybe new student), return empty/new one or fail depending on logic.
             // Here we assume it might not exist yet if no grades are posted, but usually created on student creation.
@@ -190,7 +172,7 @@ public class RegistrationServiceImpl implements RegistrationService {
      * Finds first section with overlapping times for this student. Returns null if no conflict.
      */
     private Section findFirstConflictSection(Student student, Section target) {
-        List<Section> all = sectionRepository.findAll();
+        List<Section> all = sectionRepo.findAll();
 
         for (Section existing : all) {
             boolean enrolledHere = false;
@@ -217,39 +199,26 @@ public class RegistrationServiceImpl implements RegistrationService {
     }
 
     @Override
-    public Result<Enrollment> adminOverrideEnroll(String studentId, String sectionId, String adminId, String reason) {
-        if (adminId == null || adminId.isBlank()) {
-            return Result.fail("Admin ID cannot be null");
-        }
-        if (personRepository.findById(adminId).isEmpty()) {
-            return Result.fail("Admin not found: " + adminId);
+    public Result<Enrollment> adminOverrideEnroll(String sid, String secId, String adminId, String reason) {
+        if (adminId == null || personRepo.findById(adminId).isEmpty()) {
+            return Result.fail("Invalid Admin");
         }
         
-        Optional<Student> sOpt = studentRepository.findById(studentId);
-        if (sOpt.isEmpty()) return Result.fail("Student not found");
+        var sOpt = studentRepo.findById(sid);
+        var secOpt = sectionRepo.findById(secId);
         
-        Optional<Section> secOpt = sectionRepository.findById(sectionId);
-        if (secOpt.isEmpty()) return Result.fail("Section not found");
+        if (sOpt.isEmpty() || secOpt.isEmpty()) return Result.fail("Student/Section not found");
         
-        Student student = sOpt.get();
-        Section section = secOpt.get();
+        Enrollment enr = new Enrollment(sOpt.get(), secOpt.get());
+        enr.setStatus(EnrollmentStatus.ENROLLED);
+        secOpt.get().addEnrollment(enr);
         
-        Enrollment enrollment = new Enrollment(student, section);
-        enrollment.setStatus(EnrollmentStatus.ENROLLED);
-        section.addEnrollment(enrollment);
+        logs.add(new AdminOverrideLog(adminId, "FORCE_ENROLL", secId, reason));
         
-        AdminOverrideLog log = new AdminOverrideLog(
-            adminId,
-            "ENROLLMENT_OVERRIDE: Student " + studentId + " enrolled in " + sectionId,
-            sectionId,
-            reason != null ? reason : "No reason provided"
-        );
-        overrideLogs.add(log);
-        
-        return Result.ok(enrollment);
+        return Result.ok(enr);
     }
 
     public List<AdminOverrideLog> getOverrideLogs() {
-        return new ArrayList<>(overrideLogs);
+        return new ArrayList<>(logs);
     }
 }

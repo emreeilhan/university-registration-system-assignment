@@ -19,55 +19,43 @@ import java.util.Optional;
  * GradingService implementation. Handles posting grades and calculating GPAs.
  */
 public class GradingServiceImpl implements GradingService {
-    private final StudentRepository studentRepository;
-    private final SectionRepository sectionRepository;
-    private final EnrollmentRepository enrollmentRepository;
-    private final TranscriptRepository transcriptRepository;
+    private final StudentRepository studentRepo;
+    private final SectionRepository sectionRepo;
+    private final EnrollmentRepository enrollmentRepo;
+    private final TranscriptRepository transcriptRepo;
 
-    public GradingServiceImpl(StudentRepository studentRepository, SectionRepository sectionRepository, EnrollmentRepository enrollmentRepository, TranscriptRepository transcriptRepository) {
-        if (studentRepository == null || sectionRepository == null || enrollmentRepository == null || transcriptRepository == null) {
-            throw new IllegalArgumentException("Repositories cannot be null");
-        }
-        this.studentRepository = studentRepository;
-        this.sectionRepository = sectionRepository;
-        this.enrollmentRepository = enrollmentRepository;
-        this.transcriptRepository = transcriptRepository;
+    public GradingServiceImpl(StudentRepository studentRepo, SectionRepository sectionRepo, EnrollmentRepository enrollmentRepo, TranscriptRepository transcriptRepo) {
+        this.studentRepo = studentRepo;
+        this.sectionRepo = sectionRepo;
+        this.enrollmentRepo = enrollmentRepo;
+        this.transcriptRepo = transcriptRepo;
     }
 
     @Override
-    public Result<Void> postGrade(String instructorId, String sectionId, String studentId, Grade grade) {
-        Optional<Student> sOpt = studentRepository.findById(studentId);
-        if (sOpt.isEmpty()) return Result.fail("Student not found: " + studentId);
+    public Result<Void> postGrade(String insId, String secId, String stuId, Grade grade) {
+        var sOpt = studentRepo.findById(stuId);
+        if (sOpt.isEmpty()) return Result.fail("Student not found");
         
-        Optional<Section> secOpt = sectionRepository.findById(sectionId);
-        if (secOpt.isEmpty()) return Result.fail("Section not found: " + sectionId);
+        var secOpt = sectionRepo.findById(secId);
+        if (secOpt.isEmpty()) return Result.fail("Section not found");
         
-        Student student = sOpt.get();
-        Section section = secOpt.get();
+        var eOpt = enrollmentRepo.findByStudentAndSection(sOpt.get(), secOpt.get());
+        if (eOpt.isEmpty()) return Result.fail("Not enrolled");
         
-        // In a real app, we would check if the instructorId matches the section's instructor
+        Enrollment enr = eOpt.get();
+        enr.assignGrade(grade);
         
-        Optional<Enrollment> eOpt = enrollmentRepository.findByStudentAndSection(student, section);
-        if (eOpt.isEmpty()) return Result.fail("Enrollment not found");
+        var t = transcriptRepo.findById(stuId)
+                .orElseGet(() -> transcriptRepo.save(new Transcript(sOpt.get())));
         
-        Enrollment enrollment = eOpt.get();
-        // Use Gradable interface for polymorphic grade assignment
-        Gradable gradable = enrollment;
-        gradable.assignGrade(grade);
-        
-        Transcript transcript = transcriptRepository.findById(studentId)
-                .orElseGet(() -> transcriptRepository.save(new Transcript(student)));
-        
-        transcript.addEntry(new edu.uni.registration.model.TranscriptEntry(section, grade));
+        t.addEntry(new edu.uni.registration.model.TranscriptEntry(secOpt.get(), grade));
         return Result.ok(null);
     }
 
     @Override
-    public Result<Double> computeGPA(String studentId) {
-        Optional<Transcript> tOpt = transcriptRepository.findById(studentId);
-        if (tOpt.isEmpty()) {
-            return Result.fail("Transcript not found for student: " + studentId);
-        }
+    public Result<Double> computeGPA(String stuId) {
+        var tOpt = transcriptRepo.findById(stuId);
+        if (tOpt.isEmpty()) return Result.fail("No transcript");
         return Result.ok(tOpt.get().getGpa());
     }
 }

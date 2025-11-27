@@ -21,164 +21,113 @@ import java.util.Optional;
  * CatalogService implementation. Handles courses, sections, searching, and admin overrides.
  */
 public class CatalogServiceImpl implements CatalogService {
-    private final CourseRepository courseRepository;
-    private final SectionRepository sectionRepository;
-    private final PersonRepository personRepository;
-    private final List<AdminOverrideLog> overrideLogs;
+    private final CourseRepository courseRepo;
+    private final SectionRepository sectionRepo;
+    private final PersonRepository personRepo;
+    private final List<AdminOverrideLog> logs;
 
-    public CatalogServiceImpl(CourseRepository courseRepository, SectionRepository sectionRepository, PersonRepository personRepository) {
-        if (courseRepository == null || sectionRepository == null || personRepository == null) {
-            throw new IllegalArgumentException("Repositories cannot be null");
-        }
-        this.courseRepository = courseRepository;
-        this.sectionRepository = sectionRepository;
-        this.personRepository = personRepository;
-        this.overrideLogs = new ArrayList<>();
+    public CatalogServiceImpl(CourseRepository courseRepo, SectionRepository sectionRepo, PersonRepository personRepo) {
+        this.courseRepo = courseRepo;
+        this.sectionRepo = sectionRepo;
+        this.personRepo = personRepo;
+        this.logs = new ArrayList<>();
     }
 
     @Override
     public Result<List<Course>> search(CourseQuery query) {
-        List<Course> allCourses = courseRepository.findAll();
+        List<Course> all = courseRepo.findAll();
         
-        // Convert CourseQuery to Specification pattern
-        CourseSpecification specification = CourseSpecification.fromQuery(query, sectionRepository);
+        // Manual filtering instead of Specification pattern
+        List<Course> result = new ArrayList<>();
         
-        if (specification == null) {
-            return Result.ok(allCourses);
+        for (Course c : all) {
+            boolean match = true;
+            if (query.getCode() != null && !c.getCode().contains(query.getCode())) match = false;
+            if (query.getTitle() != null && !c.getTitle().contains(query.getTitle())) match = false;
+            
+            if (match) result.add(c);
         }
 
-        // Filter courses using Specification pattern
-        List<Course> filteredCourses = new ArrayList<>();
-        for (Course course : allCourses) {
-            if (specification.isSatisfiedBy(course)) {
-                filteredCourses.add(course);
-            }
-        }
-
-        return Result.ok(filteredCourses);
+        return Result.ok(result);
     }
 
 
     @Override
     public Result<Course> createCourse(String code, String title, int credits) {
-        if (code == null || title == null) return Result.fail("Code and Title cannot be null");
-        if (credits <= 0) return Result.fail("Credits must be positive");
+        if (code == null || title == null) return Result.fail("Missing info");
         
         Course c = new Course(code, title, credits);
-        courseRepository.save(c);
+        courseRepo.save(c);
         return Result.ok(c);
     }
 
     @Override
     public Result<Section> createSection(String id, Course course, String term, int capacity) {
-        if (id == null || course == null || term == null) return Result.fail("Section details cannot be null");
-        if (capacity < 0) return Result.fail("Capacity cannot be negative");
+        if (id == null || course == null) return Result.fail("Missing info");
         
         Section s = new Section(id, course, term, capacity);
-        sectionRepository.save(s);
+        sectionRepo.save(s);
         return Result.ok(s);
     }
 
     @Override
-    public Result<Void> assignInstructor(String sectionId, String instructorId) {
-        if (sectionId == null || instructorId == null) return Result.fail("IDs cannot be null");
+    public Result<Void> assignInstructor(String secId, String insId) {
+        var pOpt = personRepo.findById(insId);
+        if (pOpt.isEmpty()) return Result.fail("Instructor not found");
         
-        Optional<Person> pOpt = personRepository.findById(instructorId);
-        if (pOpt.isEmpty()) return Result.fail("Instructor not found: " + instructorId);
+        if (!(pOpt.get() instanceof Instructor)) return Result.fail("Not an instructor");
+        Instructor ins = (Instructor) pOpt.get();
         
-        Person p = pOpt.get();
-        if (!(p instanceof Instructor)) return Result.fail("User is not an instructor");
-        Instructor instructor = (Instructor) p;
+        var secOpt = sectionRepo.findById(secId);
+        if (secOpt.isEmpty()) return Result.fail("Section not found");
         
-        return sectionRepository.findById(sectionId)
-                .map(s -> {
-                    s.setInstructor(instructor);
-                    instructor.addAssignedSection(s);
-                    return Result.<Void>ok(null);
-                })
-                .orElse(Result.fail("Section not found: " + sectionId));
+        Section s = secOpt.get();
+        s.setInstructor(ins);
+        ins.addAssignedSection(s);
+        
+        return Result.ok(null);
     }
 
     @Override
-    public Result<Void> adminOverrideCapacity(String sectionId, int newCapacity, String adminId, String reason) {
-        if (adminId == null || adminId.isBlank()) {
-            return Result.fail("Admin ID cannot be null");
-        }
-        if (personRepository.findById(adminId).isEmpty()) {
-            return Result.fail("Admin not found: " + adminId);
-        }
+    public Result<Void> adminOverrideCapacity(String secId, int newCap, String adminId, String reason) {
+        if (personRepo.findById(adminId).isEmpty()) return Result.fail("Invalid admin");
         
-        return sectionRepository.findById(sectionId)
-                .map(section -> {
-                    if (newCapacity < 0) {
-                        return Result.<Void>fail("Capacity cannot be negative");
-                    }
-                    int oldCapacity = section.getCapacity();
-                    section.setCapacity(newCapacity);
+        var secOpt = sectionRepo.findById(secId);
+        if (secOpt.isEmpty()) return Result.fail("Section not found");
+        Section s = secOpt.get();
 
-                    AdminOverrideLog log = new AdminOverrideLog(
-                            adminId,
-                            "CAPACITY_OVERRIDE: " + oldCapacity + " -> " + newCapacity,
-                            sectionId,
-                            reason != null ? reason : "No reason provided"
-                    );
-                    overrideLogs.add(log);
-                    return Result.<Void>ok(null);
-                })
-                .orElse(Result.fail("Section not found: " + sectionId));
+        int old = s.getCapacity();
+        s.setCapacity(newCap);
+
+        logs.add(new AdminOverrideLog(adminId, "CAPACITY: " + old + "->" + newCap, secId, reason));
+        return Result.ok(null);
     }
 
     @Override
-    public Result<List<Section>> getInstructorSections(String instructorId) {
-        if (instructorId == null || instructorId.isBlank()) {
-            return Result.fail("Instructor ID cannot be null");
+    public Result<List<Section>> getInstructorSections(String insId) {
+        var pOpt = personRepo.findById(insId);
+        if (pOpt.isEmpty()) return Result.fail("Not found");
+        
+        if (pOpt.get() instanceof Instructor) {
+            return Result.ok(((Instructor) pOpt.get()).getAssignedSections());
         }
-        return personRepository.findById(instructorId)
-                .map(person -> {
-                    if (person instanceof Instructor) {
-                        return Result.ok(((Instructor) person).getAssignedSections());
-                    } else {
-                        return Result.<List<Section>>fail("User is not an instructor");
-                    }
-                })
-                .orElse(Result.fail("Instructor not found"));
+        return Result.fail("Not an instructor");
     }
 
     public List<AdminOverrideLog> getOverrideLogs() {
-        return new ArrayList<>(overrideLogs);
+        return new ArrayList<>(logs);
     }
 
     @Override
     public Result<Course> updateCourse(String code, String newTitle, Integer newCredits) {
-        // Purpose: Provide a minimal edit capability for Admin over existing courses
-        if (code == null || code.isBlank()) {
-            return Result.fail("Course code cannot be null");
-        }
-        Optional<Course> cOpt = courseRepository.findById(code);
-        if (cOpt.isEmpty()) {
-            return Result.fail("Course not found: " + code);
-        }
+        var cOpt = courseRepo.findById(code);
+        if (cOpt.isEmpty()) return Result.fail("Course not found");
 
-        Course course = cOpt.get();
+        Course c = cOpt.get();
+        if (newTitle != null) c.setTitle(newTitle);
+        if (newCredits != null) c.setCredits(newCredits);
 
-        boolean changed = false;
-        if (newTitle != null && !newTitle.isBlank()) {
-            course.setTitle(newTitle);
-            changed = true;
-        }
-        if (newCredits != null) {
-            if (newCredits <= 0) {
-                return Result.fail("Credits must be positive");
-            }
-            course.setCredits(newCredits);
-            changed = true;
-        }
-        if (!changed) {
-            return Result.fail("No changes provided");
-        }
-
-        // Persist updated entity
-        courseRepository.save(course);
-        return Result.ok(course);
+        courseRepo.save(c);
+        return Result.ok(c);
     }
 }
