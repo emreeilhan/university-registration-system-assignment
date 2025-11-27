@@ -35,15 +35,15 @@ public class CommandLineInterface {
     }
 
     public void start() {
-        System.out.println("Welcome to the University Registration System");
+        System.out.println("Uni Registration System v1.0");
         
         while (true) {
             System.out.println("\n=== LOGIN MENU ===");
-            System.out.println("1. Login as Student");
-            System.out.println("2. Login as Instructor");
-            System.out.println("3. Login as Admin");
+            System.out.println("1. Student");
+            System.out.println("2. Instructor");
+            System.out.println("3. Admin");
             System.out.println("0. Exit");
-            System.out.print("Select an option: ");
+            System.out.print("Choose option > ");
 
             String choice = scanner.nextLine();
             
@@ -58,25 +58,23 @@ public class CommandLineInterface {
                     login("ADMIN");
                     break;
                 case "0":
-                    System.out.println("Goodbye!");
+                    System.out.println("Bye.");
                     return;
                 default:
-                    System.out.println("Invalid option. Please try again.");
+                    System.out.println("Unknown option.");
             }
         }
     }
 
     private void login(String role) {
-        System.out.print("Enter your ID: ");
+        System.out.print("Enter ID: ");
         String id = scanner.nextLine();
-        // In a real app, we would verify existence here.
-        // For this demo, we assume the ID is valid if it exists in our mock data,
-        // or we just proceed to show the menu.
         
+        // Mock auth check
         this.currentUserId = id;
         this.currentUserRole = role;
         
-        System.out.println("Logged in as " + role + " (" + id + ")");
+        System.out.println("Signed in: " + role + " [" + id + "]");
         
         switch (role) {
             case "STUDENT":
@@ -402,16 +400,13 @@ public class CommandLineInterface {
         try {
             int cap = Integer.parseInt(scanner.nextLine());
             
-            // Need to find the course object first. 
-            // CatalogService.search is list-based, let's use a hack or better, add findByCode to service.
-            // For now, we search by code and pick first.
+            // Find course by code (using first match)
             CourseQuery q = new CourseQuery();
             q.setCode(cCode);
             Result<List<Course>> search = catalogService.search(q);
             
             Course targetCourse = null;
             if(search.isOk() && !search.get().isEmpty()) {
-                 // Exact match check
                  targetCourse = search.get().stream()
                          .filter(c -> c.getCode().equalsIgnoreCase(cCode))
                          .findFirst()
@@ -419,16 +414,16 @@ public class CommandLineInterface {
             }
             
             if (targetCourse == null) {
-                System.out.println("Course not found: " + cCode);
+                System.out.println("No course found for code: " + cCode);
                 return;
             }
 
             Result<Section> sRes = catalogService.createSection(secId, targetCourse, term, cap);
             if (sRes.isOk()) System.out.println("Section created.");
-            else System.out.println("Error: " + sRes.getError());
+            else System.out.println("Failed: " + sRes.getError());
 
         } catch (NumberFormatException e) {
-            System.out.println("Invalid capacity.");
+            System.out.println("Capacity must be a number.");
         }
     }
 

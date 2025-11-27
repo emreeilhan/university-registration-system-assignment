@@ -40,29 +40,29 @@ public class RegistrationServiceImpl implements RegistrationService {
     @Override
     public Result<Enrollment> enrollStudentInSection(String studentId, String sectionId) {
         if (studentId == null || sectionId == null) {
-            return Result.fail("Student ID and Section ID cannot be null");
+            return Result.fail("Missing Student ID or Section ID");
         }
 
         Optional<Student> studentOpt = studentRepository.findById(studentId);
         if (studentOpt.isEmpty()) {
-            return Result.fail("Student not found: " + studentId);
+            return Result.fail("Cannot find student with ID: " + studentId);
         }
         Student student = studentOpt.get();
 
         Optional<Section> sectionOpt = sectionRepository.findById(sectionId);
         if (sectionOpt.isEmpty()) {
-            return Result.fail("Section not found: " + sectionId);
+            return Result.fail("Cannot find section with ID: " + sectionId);
         }
         Section section = sectionOpt.get();
 
         Optional<Transcript> transcriptOpt = transcriptRepository.findById(student.getId());
         if (transcriptOpt.isEmpty()) {
-            return Result.fail("Transcript not found for student: " + student.getId());
+            return Result.fail("No transcript record for student: " + student.getId());
         }
         Transcript transcript = transcriptOpt.get();
 
         if (!prerequisiteValidator.hasCompletedPrerequisites(transcript, section.getCourse())) {
-            return Result.fail("Student has not completed prerequisites.");
+            return Result.fail("Prerequisites not met for this course.");
         }
 
         

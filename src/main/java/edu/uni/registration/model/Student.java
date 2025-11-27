@@ -29,12 +29,9 @@ public class Student extends Person {
     
     @Override
     public String displayProfile() {
-        return String.format("Student Profile: %s\nMajor: %s\nYear: %d\nCurrent Enrollments: %d\nGPA: %.2f",
-                getFullName(),
-                major,
-                year,
-                currentEnrollments.size(),
-                transcript.getGpa());
+        return "Student: " + getFullName() +
+               "\nMajor: " + major + " (Year " + year + ")" +
+               "\nGPA: " + String.format("%.2f", transcript.getGpa());
     }
 
     public String getMajor() {
