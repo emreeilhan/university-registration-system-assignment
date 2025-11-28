@@ -12,11 +12,9 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * Lightweight specification helper for course searches.
- * Think of it as a set of filters you can mix and match:
- * - Course bits: code, title text, credit range
- * - Section bits: instructor name, day, time block
- * Combine whatever you need and we'll make sure only the matching courses get through.
+ * Handy filter for course searches. 
+ * Pick and combine what you care about: code, title, credits,
+ * instructor, days, or times—only matching courses are returned.
  */
 public class CourseSpecification implements Specification<Course> {
     
@@ -34,7 +32,7 @@ public class CourseSpecification implements Specification<Course> {
     
     private final SectionRepository sectionRepository;
     
-    /** Use the builder instead of calling this directly – keeps things tidy. */
+    
     private CourseSpecification(Builder builder, SectionRepository sectionRepository) {
         this.code = builder.code;
         this.title = builder.title;
@@ -46,10 +44,7 @@ public class CourseSpecification implements Specification<Course> {
         this.endTime = builder.endTime;
         this.sectionRepository = sectionRepository;
     }
-    
-    /**
-     
-     */
+
     public static CourseSpecification fromQuery(CourseQuery query, SectionRepository sectionRepository) {
         if (query == null) {
             return null;
@@ -67,7 +62,7 @@ public class CourseSpecification implements Specification<Course> {
                 .build();
     }
     
-    /** Main entry point: does the given course pass every filter we set up? */
+    
     @Override
     public boolean isSatisfiedBy(Course course) {
         if (course == null) {
