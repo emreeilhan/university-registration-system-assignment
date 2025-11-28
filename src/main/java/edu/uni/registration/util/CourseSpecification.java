@@ -12,9 +12,8 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * Handy filter for course searches. 
- * Pick and combine what you care about: code, title, credits,
- * instructor, days, or times—only matching courses are returned.
+ * Specification for filtering courses by code, title, credits, instructor,
+ * day of week, or time slots.
  */
 public class CourseSpecification implements Specification<Course> {
     
