@@ -128,32 +128,38 @@ public class RegistrationServiceImpl implements RegistrationService {
         if (studentId == null) return Result.fail("Student ID cannot be null");
         Optional<Student> studentOpt = studentRepo.findById(studentId);
         if (studentOpt.isEmpty()) return Result.fail("Student not found");
-        Student student = studentOpt.get();
-
-        List<Section> allSections = sectionRepo.findAll();
+        
+        List<Enrollment> enrollments = enrollmentRepo.findByStudent(studentId);
         List<Section> result = new ArrayList<>();
+        // Use enrollmentRepo as source of truth, but also fall back to roster scan
+        // in case an enrollment was added directly to a section without repo save.
 
-        for (Section section : allSections) {
-
-            if (term != null && !term.isBlank()) {
-                if (!term.equals(section.getTerm())) {
-                    continue;
-                }
+        for (Enrollment e : enrollments) {
+            if (e.getStatus() != EnrollmentStatus.ENROLLED) {
+                continue;
             }
+            Section section = e.getSection();
+            if (term != null && !term.isBlank() && !term.equals(section.getTerm())) {
+                continue;
+            }
+            result.add(section);
+        }
 
-            boolean enrolledHere = false;
+        // Fallback scan through sections to catch any roster-only enrollments
+        for (Section section : sectionRepo.findAll()) {
+            if (term != null && !term.isBlank() && !term.equals(section.getTerm())) {
+                continue;
+            }
             for (Enrollment e : section.getRoster()) {
-                if (e.getStudent().getId().equals(student.getId()) &&
-                        e.getStatus() == EnrollmentStatus.ENROLLED) {
-                    enrolledHere = true;
+                if (e.getStatus() == EnrollmentStatus.ENROLLED && studentId.equals(e.getStudent().getId())) {
+                    if (!result.contains(section)) {
+                        result.add(section);
+                    }
                     break;
                 }
             }
-
-            if (enrolledHere) {
-                result.add(section);
-            }
         }
+
         return Result.ok(result);
     }
 
@@ -167,13 +173,8 @@ public class RegistrationServiceImpl implements RegistrationService {
         }
 
         Optional<Transcript> tOpt = transcriptRepo.findById(studentId);
-        if (tOpt.isEmpty()) {
-            // If no transcript found (maybe new student), return empty/new one or fail depending on logic.
-            // Here we assume it might not exist yet if no grades are posted, but usually created on student creation.
-            // Let's return a fail or create on fly if desired. For now fail if not found.
-            return Result.fail("No transcript record found for student.");
-        }
-        return Result.ok(tOpt.get());
+        Transcript transcript = tOpt.orElseGet(() -> transcriptRepo.save(new Transcript(studentRepo.findById(studentId).get())));
+        return Result.ok(transcript);
     }
 
     /**

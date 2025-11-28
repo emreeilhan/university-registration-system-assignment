@@ -34,4 +34,9 @@ public interface CatalogService {
      * Updates course fields. Null args are ignored. Used by Admin CLI.
      */
     Result<Course> updateCourse(String code, String newTitle, Integer newCredits);
+
+    /**
+     * Returns all sections for the given course code.
+     */
+    Result<List<Section>> getSectionsByCourseCode(String courseCode);
 }

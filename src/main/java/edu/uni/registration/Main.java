@@ -40,7 +40,7 @@ public class Main {
         );
 
         // 4. Seed Data
-        seedData(studentRepo, courseRepo, sectionRepo, personRepo, transcriptRepo);
+        seedData(studentRepo, courseRepo, sectionRepo, personRepo, transcriptRepo, enrollmentRepo);
 
         // 5. Choose Interface (CLI or GUI)
         System.out.println("Choose mode: 1 for CLI, 2 for GUI");
@@ -65,7 +65,7 @@ public class Main {
         }
     }
 
-    private static void seedData(StudentRepository sRepo, CourseRepository cRepo, SectionRepository secRepo, PersonRepository pRepo, TranscriptRepository tRepo) {
+    private static void seedData(StudentRepository sRepo, CourseRepository cRepo, SectionRepository secRepo, PersonRepository pRepo, TranscriptRepository tRepo, EnrollmentRepository eRepo) {
         System.out.println("Seeding data...");
 
         // --- 1. Users (Admin, Instructors, Students) ---
@@ -191,13 +191,31 @@ public class Main {
             secRepo.save(s);
         }
 
+        // --- 5. Sample current enrollments for demo (so My Schedule is not empty) ---
+        // S3 is eligible for CS102, S4 for CS201, S1 has no prereqs so CS101.
+        enrollStudent(eRepo, secRepo, studentRepo, "S1", "CS101-01");
+        enrollStudent(eRepo, secRepo, studentRepo, "S3", "CS102-01");
+        enrollStudent(eRepo, secRepo, studentRepo, "S4", "CS201-01");
+
         System.out.println("Seed data loaded successfully.");
         System.out.println("--------------------------------------------------");
         System.out.println("Users to try:");
         System.out.println("  S1 (Freshman, no history)");
-        System.out.println("  S3 (Passed CS101 -> Can take CS102)");
-        System.out.println("  S4 (Passed CS101, CS102 -> Can take CS201)");
+        System.out.println("  S3 (Passed CS101 -> Can take CS102, pre-enrolled in CS102-01)");
+        System.out.println("  S4 (Passed CS101, CS102 -> Can take CS201, pre-enrolled in CS201-01)");
         System.out.println("  A1 (Admin)");
         System.out.println("--------------------------------------------------");
+    }
+
+    private static void enrollStudent(EnrollmentRepository eRepo, SectionRepository secRepo, StudentRepository sRepo, String studentId, String sectionId) {
+        sRepo.findById(studentId).flatMap(student ->
+                secRepo.findById(sectionId).map(section -> {
+                    Enrollment enrollment = new Enrollment(student, section);
+                    enrollment.setStatus(Enrollment.EnrollmentStatus.ENROLLED);
+                    section.addEnrollment(enrollment);
+                    eRepo.save(enrollment);
+                    return enrollment;
+                })
+        );
     }
 }

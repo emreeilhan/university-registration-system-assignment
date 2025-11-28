@@ -12,12 +12,11 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * Specification implementation for filtering Course entities.
- * Implements the Specification pattern to provide flexible, composable search criteria.
- * 
- * This specification can filter courses based on:
- * - Course fields: code, title, credits range
- * - Section-level fields: instructor name, day of week, time window
+ * Lightweight specification helper for course searches.
+ * Think of it as a set of filters you can mix and match:
+ * - Course bits: code, title text, credit range
+ * - Section bits: instructor name, day, time block
+ * Combine whatever you need and we'll make sure only the matching courses get through.
  */
 public class CourseSpecification implements Specification<Course> {
     
@@ -35,9 +34,7 @@ public class CourseSpecification implements Specification<Course> {
     
     private final SectionRepository sectionRepository;
     
-    /**
-     * Private constructor - use builder methods to create instances.
-     */
+    /** Use the builder instead of calling this directly – keeps things tidy. */
     private CourseSpecification(Builder builder, SectionRepository sectionRepository) {
         this.code = builder.code;
         this.title = builder.title;
@@ -51,12 +48,7 @@ public class CourseSpecification implements Specification<Course> {
     }
     
     /**
-     * Creates a CourseSpecification from a CourseQuery.
-     * This factory method provides backward compatibility with existing CourseQuery usage.
-     * 
-     * @param query the CourseQuery to convert
-     * @param sectionRepository repository needed for section-level filtering
-     * @return a CourseSpecification instance, or null if query is null
+     
      */
     public static CourseSpecification fromQuery(CourseQuery query, SectionRepository sectionRepository) {
         if (query == null) {
@@ -75,12 +67,7 @@ public class CourseSpecification implements Specification<Course> {
                 .build();
     }
     
-    /**
-     * Checks if a course satisfies this specification.
-     * 
-     * @param course the course to evaluate
-     * @return true if the course matches all criteria, false otherwise
-     */
+    /** Main entry point: does the given course pass every filter we set up? */
     @Override
     public boolean isSatisfiedBy(Course course) {
         if (course == null) {
@@ -101,12 +88,7 @@ public class CourseSpecification implements Specification<Course> {
     }
     
     /**
-     * Checks if the course matches basic course-level fields.
-     * Uses Searchable interface for keyword matching when code or title criteria are present,
-     * demonstrating polymorphism and interface usage.
-     * 
-     * Since Course implements Searchable, we can use the interface method for polymorphic behavior.
-     */
+    
     private boolean matchesCourseFields(Course course) {
         // Use Searchable interface for keyword matching (polymorphism)
         // Course implements Searchable, so we can use the interface method
@@ -136,9 +118,7 @@ public class CourseSpecification implements Specification<Course> {
         return true;
     }
     
-    /**
-     * Checks if any section-level criteria are specified.
-     */
+    /** True if the query asked for instructor or time-based filtering. */
     private boolean hasSectionCriteria() {
         return (instructorName != null && !instructorName.isBlank()) ||
                dayOfWeek != null ||
@@ -147,8 +127,8 @@ public class CourseSpecification implements Specification<Course> {
     }
     
     /**
-     * Checks if the course has sections matching section-level criteria.
-     * This requires checking all sections for the course.
+     * Looks at every section for the course and returns true as soon as one of
+     * them matches the instructor/time filters.
      */
     private boolean matchesSectionCriteria(Course course) {
         if (sectionRepository == null) {
@@ -171,9 +151,7 @@ public class CourseSpecification implements Specification<Course> {
         return false; // No sections match
     }
     
-    /**
-     * Checks if a specific section matches the section-level criteria.
-     */
+    /** Per-section check for instructor and time window constraints. */
     private boolean matchesSection(Section section) {
         // Check instructor
         if (instructorName != null && !instructorName.isBlank()) {
@@ -217,9 +195,7 @@ public class CourseSpecification implements Specification<Course> {
         return true;
     }
     
-    /**
-     * Builder class for constructing CourseSpecification instances.
-     */
+    
     public static class Builder {
         private String code;
         private String title;

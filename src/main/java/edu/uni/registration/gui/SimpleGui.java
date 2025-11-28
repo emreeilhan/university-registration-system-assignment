@@ -497,15 +497,50 @@ public class SimpleGui extends JFrame {
     }
     
     private void enrollSelectedCourse() {
-        String sectionId = JOptionPane.showInputDialog(this, "Enter Section ID to enroll (e.g. CS101-01):");
-        if (sectionId != null && !sectionId.isBlank()) {
-            Result<Enrollment> res = registrationService.enrollStudentInSection(currentUserId, sectionId);
-            if (res.isOk()) {
-                JOptionPane.showMessageDialog(this, "Enrolled! Status: " + res.get().getStatus());
-                refreshStudentData();
-            } else {
-                JOptionPane.showMessageDialog(this, "Failed: " + res.getError());
-            }
+        int row = searchTable.getSelectedRow();
+        if (row == -1) {
+            JOptionPane.showMessageDialog(this, "Select a course first.");
+            return;
+        }
+
+        String courseCode = (String) searchModel.getValueAt(row, 0);
+        Result<List<Course>> searchResult = catalogService.search(new CourseQuery());
+        // Get sections for the selected course
+        var secResult = catalogService.getSectionsByCourseCode(courseCode);
+        if (secResult.isFail()) {
+            JOptionPane.showMessageDialog(this, "Failed: " + secResult.getError());
+            return;
+        }
+        List<Section> sections = secResult.get();
+        if (sections.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "No sections available for " + courseCode);
+            return;
+        }
+
+        Section chosen;
+        if (sections.size() == 1) {
+            chosen = sections.get(0);
+        } else {
+            String[] ids = sections.stream().map(Section::getId).toArray(String[]::new);
+            String selectedId = (String) JOptionPane.showInputDialog(
+                    this,
+                    "Choose section to enroll:",
+                    "Select Section",
+                    JOptionPane.PLAIN_MESSAGE,
+                    null,
+                    ids,
+                    ids[0]
+            );
+            if (selectedId == null) return;
+            chosen = sections.stream().filter(s -> s.getId().equals(selectedId)).findFirst().orElse(null);
+        }
+
+        Result<Enrollment> res = registrationService.enrollStudentInSection(currentUserId, chosen.getId());
+        if (res.isOk()) {
+            JOptionPane.showMessageDialog(this, "Enrolled! Status: " + res.get().getStatus());
+            refreshStudentData();
+        } else {
+            JOptionPane.showMessageDialog(this, "Failed: " + res.getError());
         }
     }
 }

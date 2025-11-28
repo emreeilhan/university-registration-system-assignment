@@ -135,4 +135,18 @@ public class CatalogServiceImpl implements CatalogService {
         courseRepo.save(c);
         return Result.ok(c);
     }
+
+    @Override
+    public Result<List<Section>> getSectionsByCourseCode(String courseCode) {
+        if (courseCode == null || courseCode.isBlank()) {
+            return Result.fail("Course code required");
+        }
+        List<Section> matches = new ArrayList<>();
+        for (Section s : sectionRepo.findAll()) {
+            if (s.getCourse().getCode().equalsIgnoreCase(courseCode)) {
+                matches.add(s);
+            }
+        }
+        return Result.ok(matches);
+    }
 }
