@@ -24,9 +24,10 @@ class StudentTranscriptTest {
         transcriptRepo = new TranscriptRepository();
         sectionRepo = new SectionRepository();
         PersonRepository personRepo = new PersonRepository(); // needed for constructor but not used here
+        EnrollmentRepository enrollmentRepo = new EnrollmentRepository();
         
         PrerequisiteValidator prereqVal = new PrerequisiteValidator();
-        registrationService = new RegistrationServiceImpl(studentRepo, sectionRepo, prereqVal, transcriptRepo, personRepo);
+        registrationService = new RegistrationServiceImpl(studentRepo, sectionRepo, prereqVal, transcriptRepo, personRepo, enrollmentRepo);
     }
 
     @Test
@@ -59,8 +60,6 @@ class StudentTranscriptTest {
         assertTrue(res.getError().contains("Student not found"));
     }
 }
-
-
 
 
 

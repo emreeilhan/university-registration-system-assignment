@@ -1,5 +1,6 @@
 package edu.uni.registration.service.impl;
 
+import edu.uni.registration.model.Admin;
 import edu.uni.registration.model.Course;
 import edu.uni.registration.model.Instructor;
 import edu.uni.registration.model.Person;
@@ -36,16 +37,17 @@ public class CatalogServiceImpl implements CatalogService {
     @Override
     public Result<List<Course>> search(CourseQuery query) {
         List<Course> all = courseRepo.findAll();
-        
-        // Manual filtering instead of Specification pattern
+        if (query == null) {
+            return Result.ok(all);
+        }
+
+        CourseSpecification spec = CourseSpecification.fromQuery(query, sectionRepo);
         List<Course> result = new ArrayList<>();
-        
+
         for (Course c : all) {
-            boolean match = true;
-            if (query.getCode() != null && !c.getCode().contains(query.getCode())) match = false;
-            if (query.getTitle() != null && !c.getTitle().contains(query.getTitle())) match = false;
-            
-            if (match) result.add(c);
+            if (spec == null || spec.isSatisfiedBy(c)) {
+                result.add(c);
+            }
         }
 
         return Result.ok(result);
@@ -90,7 +92,10 @@ public class CatalogServiceImpl implements CatalogService {
 
     @Override
     public Result<Void> adminOverrideCapacity(String secId, int newCap, String adminId, String reason) {
-        if (personRepo.findById(adminId).isEmpty()) return Result.fail("Invalid admin");
+        var adminOpt = personRepo.findById(adminId);
+        if (adminOpt.isEmpty() || !(adminOpt.get() instanceof Admin)) {
+            return Result.fail("Invalid admin");
+        }
         
         var secOpt = sectionRepo.findById(secId);
         if (secOpt.isEmpty()) return Result.fail("Section not found");

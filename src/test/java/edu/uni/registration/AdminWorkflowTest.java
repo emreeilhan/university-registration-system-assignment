@@ -36,7 +36,8 @@ class AdminWorkflowTest {
         catalogService = new CatalogServiceImpl(courseRepo, sectionRepo, personRepo);
         
         PrerequisiteValidator prereqVal = new PrerequisiteValidator();
-        registrationService = new RegistrationServiceImpl(studentRepo, sectionRepo, prereqVal, transcriptRepo, personRepo);
+        EnrollmentRepository enrollmentRepo = new EnrollmentRepository();
+        registrationService = new RegistrationServiceImpl(studentRepo, sectionRepo, prereqVal, transcriptRepo, personRepo, enrollmentRepo);
         
         // Setup Admin
         Admin admin = new Admin("A1", "Admin", "User", "admin@uni.edu");
@@ -110,7 +111,6 @@ class AdminWorkflowTest {
         assertEquals(1, s.getRoster().size());
     }
 }
-
 
 
 

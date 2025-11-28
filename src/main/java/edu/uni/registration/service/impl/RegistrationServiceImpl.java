@@ -1,6 +1,7 @@
 package edu.uni.registration.service.impl;
 
 import edu.uni.registration.model.*;
+import edu.uni.registration.model.Admin;
 import edu.uni.registration.model.Enrollment.EnrollmentStatus;
 import edu.uni.registration.validation.PrerequisiteValidator;
 import edu.uni.registration.service.RegistrationService;
@@ -19,18 +20,24 @@ public class RegistrationServiceImpl implements RegistrationService {
 
     private final StudentRepository studentRepo;
     private final SectionRepository sectionRepo;
+    private final EnrollmentRepository enrollmentRepo;
     private final PrerequisiteValidator validator;
     private final TranscriptRepository transcriptRepo;
     private final PersonRepository personRepo;
     private final List<AdminOverrideLog> logs;
 
     public RegistrationServiceImpl(StudentRepository studentRepo,
-                               SectionRepository sectionRepo, PrerequisiteValidator validator, TranscriptRepository transcriptRepo, PersonRepository personRepo) {
+                               SectionRepository sectionRepo,
+                               PrerequisiteValidator validator,
+                               TranscriptRepository transcriptRepo,
+                               PersonRepository personRepo,
+                               EnrollmentRepository enrollmentRepo) {
         this.studentRepo = studentRepo;
         this.sectionRepo = sectionRepo;
         this.validator = validator;
         this.transcriptRepo = transcriptRepo;
         this.personRepo = personRepo;
+        this.enrollmentRepo = enrollmentRepo;
         this.logs = new ArrayList<>();
     }
 
@@ -74,6 +81,7 @@ public class RegistrationServiceImpl implements RegistrationService {
         }
 
         sec.addEnrollment(enr);
+        enrollmentRepo.save(enr);
         return Result.ok(enr);
     }
 
@@ -208,10 +216,14 @@ public class RegistrationServiceImpl implements RegistrationService {
         var secOpt = sectionRepo.findById(secId);
         
         if (sOpt.isEmpty() || secOpt.isEmpty()) return Result.fail("Student/Section not found");
+        if (!(personRepo.findById(adminId).orElse(null) instanceof Admin)) {
+            return Result.fail("Admin privileges required");
+        }
         
         Enrollment enr = new Enrollment(sOpt.get(), secOpt.get());
         enr.setStatus(EnrollmentStatus.ENROLLED);
         secOpt.get().addEnrollment(enr);
+        enrollmentRepo.save(enr);
         
         logs.add(new AdminOverrideLog(adminId, "FORCE_ENROLL", secId, reason));
         

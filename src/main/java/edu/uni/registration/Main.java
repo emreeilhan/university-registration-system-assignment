@@ -30,7 +30,7 @@ public class Main {
 
         // 3. Setup Services
         RegistrationService regService = new RegistrationServiceImpl(
-            studentRepo, sectionRepo, prereqVal, transcriptRepo, personRepo
+            studentRepo, sectionRepo, prereqVal, transcriptRepo, personRepo, enrollmentRepo
         );
         CatalogService catalogService = new CatalogServiceImpl(
             courseRepo, sectionRepo, personRepo
@@ -158,6 +158,7 @@ public class Main {
 
         Section sec4 = new Section("PHYS101-01", phys101, "Fall 2023", 25);
         sec4.setInstructor(i3); i3.addAssignedSection(sec4);
+        sec4.addMeetingTime(new TimeSlot(DayOfWeek.TUESDAY, LocalTime.of(9, 30), LocalTime.of(11, 0), "Lab 1"));
 
         // Spring 2024
         Section sec5 = new Section("CS102-01", cs102, "Spring 2024", 25);
@@ -166,20 +167,25 @@ public class Main {
 
         Section sec6 = new Section("CS201-01", cs201, "Spring 2024", 20);
         sec6.setInstructor(i1); i1.addAssignedSection(sec6);
+        sec6.addMeetingTime(new TimeSlot(DayOfWeek.WEDNESDAY, LocalTime.of(14, 0), LocalTime.of(15, 30), "Room 103"));
 
         Section sec7 = new Section("MATH102-01", math102, "Spring 2024", 35);
         sec7.setInstructor(i2); i2.addAssignedSection(sec7);
+        sec7.addMeetingTime(new TimeSlot(DayOfWeek.THURSDAY, LocalTime.of(11, 0), LocalTime.of(12, 30), "Room 202"));
 
         Section sec8 = new Section("MATH101-02", math101, "Spring 2024", 35); // Remedial section
         sec8.setInstructor(i2); i2.addAssignedSection(sec8);
+        sec8.addMeetingTime(new TimeSlot(DayOfWeek.TUESDAY, LocalTime.of(16, 0), LocalTime.of(17, 30), "Room 202"));
 
         Section sec9 = new Section("PHYS101-02", phys101, "Spring 2024", 25);
         sec9.setInstructor(i3); i3.addAssignedSection(sec9);
+        sec9.addMeetingTime(new TimeSlot(DayOfWeek.FRIDAY, LocalTime.of(9, 0), LocalTime.of(10, 30), "Lab 2"));
 
         // Section with limited capacity to test Waitlist
         Section sec10 = new Section("CS101-SMALL", cs101, "Spring 2024", 1); // Capacity 1
         sec10.setWaitlistCapacity(2);
         sec10.setInstructor(i3); i3.addAssignedSection(sec10);
+        sec10.addMeetingTime(new TimeSlot(DayOfWeek.THURSDAY, LocalTime.of(9, 0), LocalTime.of(10, 0), "Room 105"));
 
         for (Section s : Arrays.asList(sec1, sec2, sec3, sec4, sec5, sec6, sec7, sec8, sec9, sec10)) {
             secRepo.save(s);
