@@ -3,7 +3,7 @@ import java.time.DayOfWeek;
 import java.time.LocalTime;
 
 /**
- * Time slot for a class meeting. Immutable - stores day, start/end time, and room.
+ * Immutable meeting time: day, start/end, room.
  */
 public class TimeSlot implements Comparable<TimeSlot> {
     private final DayOfWeek dayOfWeek;
@@ -45,9 +45,6 @@ public class TimeSlot implements Comparable<TimeSlot> {
         return room;
     }
 
-    /**
-     * Checks if this time slot overlaps with another (same day, intersecting times).
-     */
     public boolean overlaps(TimeSlot other) {
         if(other == null) {
             return false;

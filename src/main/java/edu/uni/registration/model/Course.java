@@ -65,27 +65,19 @@ public class Course implements Searchable {
         prerequisites.remove(courseCode);
     }
 
-    /**
-     * Checks if course code or title matches the keyword (case-insensitive).
-     */
     @Override
     public boolean matchesKeyword(String keyword) {
         if (keyword == null || keyword.isBlank()) {
             return false;
         }
-        
         String lowerKeyword = keyword.toLowerCase(Locale.ROOT);
         
-        // Check if keyword matches course code
         if (code != null && code.toLowerCase(Locale.ROOT).contains(lowerKeyword)) {
             return true;
         }
-        
-        // Check if keyword matches course title
         if (title != null && title.toLowerCase(Locale.ROOT).contains(lowerKeyword)) {
             return true;
         }
-        
         return false;
     }
 

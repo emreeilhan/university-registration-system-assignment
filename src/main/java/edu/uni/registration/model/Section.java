@@ -5,8 +5,7 @@ import java.util.List;
 import java.util.ArrayList;
 
 /**
- * Section entity. A course offering for a specific term.
- * Has instructor, capacity, meeting times, and roster.
+ * A specific offering of a Course in a given term.
  */
 public class Section implements Schedulable {
     private final String id;
@@ -15,8 +14,7 @@ public class Section implements Schedulable {
 
     private Instructor instructor;
     private int capacity;
-
-    private int waitlistCapacity = 10; // Default waitlist capacity
+    private int waitlistCapacity = 10;
 
     private final List<TimeSlot> meetingTimes;
     private final List<Enrollment> roster;

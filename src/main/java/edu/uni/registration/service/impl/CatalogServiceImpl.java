@@ -16,7 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * CatalogService implementation. Handles courses, sections, searching, and admin overrides.
+ * Course catalog management: CRUD, search, instructor assignment.
  */
 public class CatalogServiceImpl implements CatalogService {
     private final CourseRepository courseRepo;
@@ -38,7 +38,6 @@ public class CatalogServiceImpl implements CatalogService {
             return Result.ok(all);
         }
 
-        // CourseQuery now implements Specification directly
         query.setSectionRepository(sectionRepo);
         
         List<Course> result = new ArrayList<>();

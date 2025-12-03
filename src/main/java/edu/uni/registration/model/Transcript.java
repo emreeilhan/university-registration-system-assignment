@@ -5,7 +5,7 @@ import java.util.Collections;
 import java.util.ArrayList;
 
 /**
- * Student's transcript. Holds completed courses with grades and calculates GPA.
+ * Academic record with GPA calculation.
  */
 public class Transcript {
     private final Student student;
@@ -33,14 +33,11 @@ public class Transcript {
         entries.add(entry);
     }
 
-    /**
-     * Total credits earned (excludes I and W grades).
-     */
+    /** Excludes I and W grades. */
     public int getTotalCredits(){
         int total = 0;
         for(TranscriptEntry entry : entries){
             Grade g = entry.getGrade();
-            // Exclude entries that should not count towards GPA/credits (e.g., I/W)
             if (g != null && g.countsTowardsGpa()) {
                 total += entry.getCredits();
             }

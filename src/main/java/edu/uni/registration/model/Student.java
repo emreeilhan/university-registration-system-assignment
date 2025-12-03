@@ -4,14 +4,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Student entity. Holds major, year, enrollments, and transcript.
- */
 public class Student extends Person {
     private String major;
     private int year;
     private final Transcript transcript;
-    // Using List here to keep track of sections the student is currently in
     private final List<Enrollment> currentEnrollments;
 
     public Student(String id,String firstName,String lastName,String email,String major,int year) {

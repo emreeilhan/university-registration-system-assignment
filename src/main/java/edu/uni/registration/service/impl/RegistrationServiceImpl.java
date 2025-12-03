@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * RegistrationService implementation. Handles enrollments, drops, schedules, and admin overrides.
+ * Core registration logic: enroll, drop, waitlist management.
  */
 public class RegistrationServiceImpl implements RegistrationService {
 
@@ -43,7 +43,6 @@ public class RegistrationServiceImpl implements RegistrationService {
 
     @Override
     public Result<Enrollment> enrollStudentInSection(String sid, String secId) {
-        // Basic checks
         if (sid == null || secId == null) return Result.fail("Missing ID");
 
         var sOpt = studentRepo.findById(sid);
@@ -56,21 +55,18 @@ public class RegistrationServiceImpl implements RegistrationService {
 
         var tOpt = transcriptRepo.findById(s.getId());
         if (tOpt.isEmpty()) return Result.fail("No transcript for " + s.getId());
-        
-        // Prereq check
+
         if (!validator.hasCompletedPrerequisites(tOpt.get(), sec.getCourse())) {
             return Result.fail("Prereqs not met");
         }
-        
-        // Time conflict?
+
         Section conflict = findFirstConflictSection(s, sec);
         if (conflict != null) {
             return Result.fail("Time conflict with " + conflict.getId());
         }
 
         Enrollment enr = new Enrollment(s, sec);
-        
-        // Check capacity
+
         if (sec.isFull()) {
             if (sec.isWaitlistFull()) {
                 return Result.fail("Section/Waitlist full");
@@ -110,7 +106,6 @@ public class RegistrationServiceImpl implements RegistrationService {
         EnrollmentStatus oldStatus = target.getStatus();
         target.setStatus(EnrollmentStatus.DROPPED);
 
-        // Auto-promote waitlist
         if (oldStatus == EnrollmentStatus.ENROLLED) {
             for (Enrollment e : sec.getRoster()) {
                 if (e.getStatus() == EnrollmentStatus.WAITLISTED) {
@@ -131,8 +126,6 @@ public class RegistrationServiceImpl implements RegistrationService {
         
         List<Enrollment> enrollments = enrollmentRepo.findByStudent(studentId);
         List<Section> result = new ArrayList<>();
-        // Use enrollmentRepo as source of truth, but also fall back to roster scan
-        // in case an enrollment was added directly to a section without repo save.
 
         for (Enrollment e : enrollments) {
             if (e.getStatus() != EnrollmentStatus.ENROLLED) {
@@ -145,7 +138,6 @@ public class RegistrationServiceImpl implements RegistrationService {
             result.add(section);
         }
 
-        // Fallback scan through sections to catch any roster-only enrollments
         for (Section section : sectionRepo.findAll()) {
             if (term != null && !term.isBlank() && !term.equals(section.getTerm())) {
                 continue;
@@ -166,8 +158,7 @@ public class RegistrationServiceImpl implements RegistrationService {
     @Override
     public Result<Transcript> getTranscript(String studentId) {
         if (studentId == null) return Result.fail("Student ID cannot be null");
-        
-        // Ensure student exists
+
         if (studentRepo.findById(studentId).isEmpty()) {
             return Result.fail("Student not found: " + studentId);
         }
@@ -177,9 +168,6 @@ public class RegistrationServiceImpl implements RegistrationService {
         return Result.ok(transcript);
     }
 
-    /**
-     * Finds first section with overlapping times for this student. Returns null if no conflict.
-     */
     private Section findFirstConflictSection(Student student, Section target) {
         List<Section> all = sectionRepo.findAll();
 
@@ -195,7 +183,6 @@ public class RegistrationServiceImpl implements RegistrationService {
 
             if (!enrolledHere) continue;
 
-            // Check time conflict
             for (TimeSlot a : existing.getMeetingTimes()) {
                 for (TimeSlot b : target.getMeetingTimes()) {
                     if (a.overlaps(b)) {

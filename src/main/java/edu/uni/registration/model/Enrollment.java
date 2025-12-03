@@ -2,8 +2,7 @@ package edu.uni.registration.model;
 import java.util.Optional;
 
 /**
- * Student's enrollment in a section. Tracks status (enrolled/dropped/waitlisted) and grade.
- * Implements Gradable for grade assignment.
+ * Links a Student to a Section with status and optional grade.
  */
 public class Enrollment implements Gradable {
     private final Student student;

@@ -16,7 +16,7 @@ import edu.uni.registration.util.Result;
 import java.util.Optional;
 
 /**
- * GradingService implementation. Handles posting grades and calculating GPAs.
+ * Grade posting and GPA calculation.
  */
 public class GradingServiceImpl implements GradingService {
     private final StudentRepository studentRepo;

@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * Query object for course search filtering.
+ * Specification pattern for course filtering.
  */
 public class CourseQuery implements Specification<Course> {
     
@@ -77,25 +77,21 @@ public class CourseQuery implements Specification<Course> {
     public boolean isSatisfiedBy(Course course) {
         if (course == null) return false;
         
-        // Code filter
         if (code != null && !code.isBlank()) {
             if (!course.getCode().toLowerCase(Locale.ROOT).contains(code.toLowerCase(Locale.ROOT))) {
                 return false;
             }
         }
         
-        // Title filter
         if (title != null && !title.isBlank()) {
             if (!course.getTitle().toLowerCase(Locale.ROOT).contains(title.toLowerCase(Locale.ROOT))) {
                 return false;
             }
         }
-        
-        // Credits range
+
         if (minCredits != null && course.getCredits() < minCredits) return false;
         if (maxCredits != null && course.getCredits() > maxCredits) return false;
         
-        // Section-level filters (instructor, time)
         if (needsSectionCheck()) {
             return checkSections(course);
         }
@@ -117,14 +113,12 @@ public class CourseQuery implements Specification<Course> {
         for (Section sec : sections) {
             if (!sec.getCourse().getCode().equals(course.getCode())) continue;
             
-            // Check instructor
             if (instructorName != null && !instructorName.isBlank()) {
                 if (sec.getInstructor() == null) continue;
                 String fullName = sec.getInstructor().getFullName().toLowerCase(Locale.ROOT);
                 if (!fullName.contains(instructorName.toLowerCase(Locale.ROOT))) continue;
             }
             
-            // Check time
             if (dayOfWeek != null || startTime != null || endTime != null) {
                 boolean timeOk = false;
                 for (TimeSlot slot : sec.getMeetingTimes()) {
@@ -137,7 +131,7 @@ public class CourseQuery implements Specification<Course> {
                 if (!timeOk) continue;
             }
             
-            return true; // Found a matching section
+            return true;
         }
         return false;
     }
