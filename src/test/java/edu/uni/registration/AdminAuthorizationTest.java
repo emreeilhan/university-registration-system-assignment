@@ -57,41 +57,41 @@ class AdminAuthorizationTest {
     }
 
     @Test
-    void nonAdminCannotOverrideEnrollment() {
+    void shouldFail_whenNonAdminTriesToOverrideEnrollment() {
         Result<Enrollment> res = registrationService.adminOverrideEnroll("S1", "SEC-1", "I1", "Nope");
         assertTrue(res.isFail());
         assertTrue(res.getError().toLowerCase().contains("admin"));
     }
 
     @Test
-    void adminOverrideCapacityRequiresAdmin() {
+    void shouldFail_whenNonAdminTriesToOverrideCapacity() {
         Result<Void> res = catalogService.adminOverrideCapacity("SEC-1", 10, "I1", "Nope");
         assertTrue(res.isFail());
         assertTrue(res.getError().toLowerCase().contains("admin"));
     }
 
     @Test
-    void waitlistPromotionKeepsGradesAndStatus() {
-        // Fill capacity
+    void shouldPromoteFromWaitlist_whenEnrolledStudentDrops() {
         Result<Enrollment> first = registrationService.enrollStudentInSection("S1", "SEC-1");
         assertTrue(first.isOk());
         assertEquals(Enrollment.EnrollmentStatus.ENROLLED, first.get().getStatus());
 
-        // Add second student to waitlist
         Student waitlisted = new Student("S2", "Mike", "Mouse", "m@uni.edu", "Math", 1);
         studentRepo.save(waitlisted);
         personRepo.save(waitlisted);
         transcriptRepo.save(waitlisted.getTranscript());
+        
         Result<Enrollment> second = registrationService.enrollStudentInSection("S2", "SEC-1");
         assertTrue(second.isOk());
         assertEquals(Enrollment.EnrollmentStatus.WAITLISTED, second.get().getStatus());
         assertTrue(sectionRepo.findById("SEC-1").orElseThrow().isFull());
         assertFalse(sectionRepo.findById("SEC-1").orElseThrow().isWaitlistFull());
 
-        // Drop first, should auto-promote second
         Result<Void> dropRes = registrationService.dropStudentInSection("S1", "SEC-1");
         assertTrue(dropRes.isOk());
+        
         Enrollment promoted = enrollmentRepo.findByStudentAndSection(waitlisted, sectionRepo.findById("SEC-1").orElseThrow()).orElseThrow();
-        assertEquals(Enrollment.EnrollmentStatus.ENROLLED, promoted.getStatus());
+        assertEquals(Enrollment.EnrollmentStatus.ENROLLED, promoted.getStatus(), 
+                "Waitlisted student should be auto-promoted to ENROLLED");
     }
 }

@@ -21,38 +21,38 @@ class PrerequisiteValidatorTest {
     }
 
     @Test
-    void testPrerequisitePassed() {
+    void shouldReturnTrue_whenPrerequisitePassedWithGradeC() {
         Course prereq = new Course("MATH101", "Calc I", 4);
         Course target = new Course("MATH102", "Calc II", 4);
         target.addPrerequisite("MATH101");
         
         Section prereqSection = new Section("SEC1", prereq, "Fall", 30);
-        transcript.addEntry(new TranscriptEntry(prereqSection, Grade.C)); // C is >= 2.0
+        transcript.addEntry(new TranscriptEntry(prereqSection, Grade.C));
 
         assertTrue(validator.hasCompletedPrerequisites(transcript, target));
     }
 
     @Test
-    void testPrerequisiteFailed() {
+    void shouldReturnFalse_whenPrerequisiteFailedWithGradeD() {
         Course prereq = new Course("MATH101", "Calc I", 4);
         Course target = new Course("MATH102", "Calc II", 4);
         target.addPrerequisite("MATH101");
         
         Section prereqSection = new Section("SEC1", prereq, "Fall", 30);
-        transcript.addEntry(new TranscriptEntry(prereqSection, Grade.D)); // D is < 2.0 (usually) or check Grade enum
+        transcript.addEntry(new TranscriptEntry(prereqSection, Grade.D));
 
-        // Checking Grade enum: D is 1.0. The validator checks >= 2.0
-        assertFalse(validator.hasCompletedPrerequisites(transcript, target));
+        assertFalse(validator.hasCompletedPrerequisites(transcript, target),
+                "D grade (1.0 points) should not satisfy prerequisite requirement (>= 2.0)");
     }
 
     @Test
-    void testEmptyPrerequisites() {
+    void shouldReturnTrue_whenCourseHasNoPrerequisites() {
         Course target = new Course("MATH101", "Calc I", 4);
         assertTrue(validator.hasCompletedPrerequisites(transcript, target));
     }
 
     @Test
-    void testPrerequisiteNotTaken() {
+    void shouldReturnFalse_whenPrerequisiteNotTaken() {
         Course target = new Course("MATH102", "Calc II", 4);
         target.addPrerequisite("MATH101");
         
@@ -60,13 +60,12 @@ class PrerequisiteValidatorTest {
     }
 
     @Test
-    void testAdminOverride() {
+    void shouldReturnTrue_whenAdminOverrideIsActive() {
         Course target = new Course("MATH102", "Calc II", 4);
         target.addPrerequisite("MATH101");
 
-        // Transcript is empty (prereq not taken), but adminOverride is true
         assertTrue(validator.hasCompletedPrerequisites(transcript, target, true),
-                "Should allow registration if admin override is active");
+                "Admin override should bypass prerequisite validation");
     }
 }
 

@@ -56,18 +56,19 @@ class CourseSearchSpecificationTest {
     }
 
     @Test
-    void filtersByInstructorName() {
+    void shouldFilterCourses_byInstructorName() {
         CourseQuery query = new CourseQuery();
         query.setInstructorName("alice");
 
         Result<List<Course>> res = catalogService.search(query);
+        
         assertTrue(res.isOk());
         assertEquals(1, res.get().size());
         assertEquals("CS101", res.get().get(0).getCode());
     }
 
     @Test
-    void filtersByCreditsAndTimeWindow() {
+    void shouldFilterCourses_byCreditsAndTimeWindow() {
         CourseQuery query = new CourseQuery();
         query.setMinCredits(4);
         query.setDayOfWeek(DayOfWeek.THURSDAY);
@@ -75,6 +76,7 @@ class CourseSearchSpecificationTest {
         query.setEndTime(LocalTime.of(12, 30));
 
         Result<List<Course>> res = catalogService.search(query);
+        
         assertTrue(res.isOk());
         assertEquals(1, res.get().size());
         assertEquals("MATH201", res.get().get(0).getCode());

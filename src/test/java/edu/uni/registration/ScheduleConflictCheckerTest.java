@@ -29,7 +29,7 @@ class ScheduleConflictCheckerTest {
     }
 
     @Test
-    void testConflicts() {
+    void shouldDetectConflict_whenTimeSlotsOverlap() {
         TimeSlot slot1 = new TimeSlot(DayOfWeek.MONDAY, LocalTime.of(9, 0), LocalTime.of(10, 30), "A");
         TimeSlot slot2 = new TimeSlot(DayOfWeek.MONDAY, LocalTime.of(10, 0), LocalTime.of(11, 30), "B");
 
@@ -40,7 +40,7 @@ class ScheduleConflictCheckerTest {
     }
 
     @Test
-    void testNonConflicts() {
+    void shouldNotDetectConflict_whenTimeSlotsAreAdjacent() {
         TimeSlot slot1 = new TimeSlot(DayOfWeek.MONDAY, LocalTime.of(9, 0), LocalTime.of(10, 0), "A");
         TimeSlot slot2 = new TimeSlot(DayOfWeek.MONDAY, LocalTime.of(10, 0), LocalTime.of(11, 0), "B");
 
@@ -51,7 +51,7 @@ class ScheduleConflictCheckerTest {
     }
 
     @Test
-    void testNullInputs() {
+    void shouldReturnFalse_whenInputIsNull() {
         Schedulable s1 = new TestSchedulable(List.of());
         assertFalse(checker.conflicts(s1, null));
         assertFalse(checker.conflicts(null, s1));

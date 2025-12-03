@@ -31,7 +31,7 @@ class GradingServiceTest {
     }
 
     @Test
-    void postGradeUpdatesEnrollmentAndTranscript() {
+    void shouldUpdateEnrollmentAndTranscript_whenGradePosted() {
         Student student = new Student("S1", "Jane", "Doe", "j@uni.edu", "CS", 1);
         studentRepo.save(student);
         Course course = new Course("CS101", "Intro", 3);
@@ -45,8 +45,8 @@ class GradingServiceTest {
         enrollmentRepo.save(enrollment);
 
         Result<Void> res = gradingService.postGrade("I1", "SEC-1", "S1", Grade.B);
+        
         assertTrue(res.isOk());
-
         assertTrue(enrollment.getGrade().isPresent());
         assertEquals(Grade.B, enrollment.getGrade().get());
 
@@ -56,7 +56,7 @@ class GradingServiceTest {
     }
 
     @Test
-    void postGradeFailsWhenNotEnrolled() {
+    void shouldFail_whenPostingGradeForUnenrolledStudent() {
         Student student = new Student("S2", "John", "Smith", "s@uni.edu", "Math", 2);
         studentRepo.save(student);
         Course course = new Course("CS102", "DS", 4);
@@ -64,6 +64,7 @@ class GradingServiceTest {
         sectionRepo.save(section);
 
         Result<Void> res = gradingService.postGrade("I1", "SEC-2", "S2", Grade.A);
+        
         assertTrue(res.isFail());
         assertTrue(res.getError().contains("Not enrolled"));
     }

@@ -26,18 +26,16 @@ class TranscriptTest {
     }
 
     @Test
-    void testCalculateGPA() {
+    void shouldCalculateCorrectGPA_whenMultipleGradesExist() {
         transcript.addEntry(new TranscriptEntry(section1, Grade.A)); // 4.0 * 3 = 12
         transcript.addEntry(new TranscriptEntry(section2, Grade.B)); // 3.0 * 4 = 12
         
-        // Total points: 24, Total credits: 7
-        // GPA: 24 / 7 = 3.428...
-        
+        // Total: 24 points / 7 credits = 3.428
         assertEquals(3.43, transcript.getGpa(), 0.01);
     }
 
     @Test
-    void testExcludeIncomplete() {
+    void shouldExcludeIncompleteGrade_fromGPACalculation() {
         transcript.addEntry(new TranscriptEntry(section1, Grade.A));
         transcript.addEntry(new TranscriptEntry(section2, Grade.I));
         
@@ -46,7 +44,7 @@ class TranscriptTest {
     }
 
     @Test
-    void testEmptyTranscript() {
+    void shouldReturnZeroGPA_whenTranscriptIsEmpty() {
         assertEquals(0.0, transcript.getGpa());
         assertEquals(0, transcript.getTotalCredits());
     }

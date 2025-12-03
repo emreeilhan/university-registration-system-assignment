@@ -31,21 +31,18 @@ class StudentTranscriptTest {
     }
 
     @Test
-    void testGetTranscriptSuccess() {
-        // Setup Student & Transcript
+    void shouldReturnTranscript_whenStudentExists() {
         Student s = new Student("S1", "Jane", "Doe", "j@uni.edu", "Math", 2);
         studentRepo.save(s);
         
         Transcript t = new Transcript(s);
-        // Add some history
         Course c = new Course("MATH101", "Calc", 4);
         Section sec = new Section("OLD-SEC", c, "Last Year", 30);
         t.addEntry(new TranscriptEntry(sec, Grade.A));
-        
         transcriptRepo.save(t);
 
-        // Test Service
         Result<Transcript> res = registrationService.getTranscript("S1");
+        
         assertTrue(res.isOk());
         Transcript retrieved = res.get();
         assertEquals("S1", retrieved.getStudent().getId());
@@ -54,7 +51,7 @@ class StudentTranscriptTest {
     }
 
     @Test
-    void testGetTranscriptStudentNotFound() {
+    void shouldFail_whenStudentDoesNotExist() {
         Result<Transcript> res = registrationService.getTranscript("NON-EXISTENT");
         assertTrue(res.isFail());
         assertTrue(res.getError().contains("Student not found"));

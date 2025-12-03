@@ -9,7 +9,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class TimeSlotTest {
 
     @Test
-    void testOverlapsSameDay() {
+    void shouldDetectOverlap_whenSameDayAndOverlappingTimes() {
         TimeSlot slot1 = new TimeSlot(DayOfWeek.MONDAY, LocalTime.of(10, 0), LocalTime.of(11, 0), "101");
         TimeSlot slot2 = new TimeSlot(DayOfWeek.MONDAY, LocalTime.of(10, 30), LocalTime.of(11, 30), "102");
         assertTrue(slot1.overlaps(slot2));
@@ -17,27 +17,27 @@ class TimeSlotTest {
     }
 
     @Test
-    void testNoOverlapDifferentDay() {
+    void shouldNotOverlap_whenDifferentDays() {
         TimeSlot slot1 = new TimeSlot(DayOfWeek.MONDAY, LocalTime.of(10, 0), LocalTime.of(11, 0), "101");
         TimeSlot slot2 = new TimeSlot(DayOfWeek.TUESDAY, LocalTime.of(10, 0), LocalTime.of(11, 0), "102");
         assertFalse(slot1.overlaps(slot2));
     }
 
     @Test
-    void testAdjacentTimes() {
+    void shouldNotOverlap_whenTimesAreAdjacent() {
         TimeSlot slot1 = new TimeSlot(DayOfWeek.MONDAY, LocalTime.of(10, 0), LocalTime.of(11, 0), "101");
         TimeSlot slot2 = new TimeSlot(DayOfWeek.MONDAY, LocalTime.of(11, 0), LocalTime.of(12, 0), "102");
         assertFalse(slot1.overlaps(slot2));
     }
 
     @Test
-    void testNullTimeSlot() {
+    void shouldReturnFalse_whenComparingWithNull() {
         TimeSlot slot1 = new TimeSlot(DayOfWeek.MONDAY, LocalTime.of(10, 0), LocalTime.of(11, 0), "101");
         assertFalse(slot1.overlaps(null));
     }
 
     @Test
-    void testConstructorValidation() {
+    void shouldThrowException_whenInvalidConstructorArgs() {
         assertThrows(IllegalArgumentException.class, () -> 
             new TimeSlot(null, LocalTime.of(10, 0), LocalTime.of(11, 0), "101"));
         

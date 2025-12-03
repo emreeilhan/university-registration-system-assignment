@@ -23,7 +23,7 @@ class RepositoryTest {
     }
 
     @Test
-    void testCourseRepositorySaveAndFind() {
+    void shouldSaveAndFindCourse_whenValidCourseProvided() {
         Course c = new Course("CS101", "Intro", 3);
         courseRepo.save(c);
         
@@ -33,7 +33,7 @@ class RepositoryTest {
     }
 
     @Test
-    void testCourseRepositoryDelete() {
+    void shouldDeleteCourse_whenCourseExists() {
         Course c = new Course("CS101", "Intro", 3);
         courseRepo.save(c);
         courseRepo.deleteById("CS101");
@@ -42,7 +42,7 @@ class RepositoryTest {
     }
 
     @Test
-    void testStudentRepositorySaveAndFind() {
+    void shouldSaveAndFindStudent_whenValidStudentProvided() {
         Student s = new Student("S1", "Ali", "Veli", "ali@uni.edu", "CS", 1);
         studentRepo.save(s);
         
@@ -52,7 +52,7 @@ class RepositoryTest {
     }
 
     @Test
-    void testFindNonExistent() {
+    void shouldReturnEmpty_whenCourseDoesNotExist() {
         Optional<Course> c = courseRepo.findById("NONEXISTENT");
         assertTrue(c.isEmpty());
     }
