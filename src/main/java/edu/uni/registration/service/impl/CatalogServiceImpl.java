@@ -3,20 +3,17 @@ package edu.uni.registration.service.impl;
 import edu.uni.registration.model.Admin;
 import edu.uni.registration.model.Course;
 import edu.uni.registration.model.Instructor;
-import edu.uni.registration.model.Person;
 import edu.uni.registration.model.Section;
 import edu.uni.registration.repository.CourseRepository;
 import edu.uni.registration.repository.SectionRepository;
 import edu.uni.registration.repository.PersonRepository;
 import edu.uni.registration.service.CatalogService;
 import edu.uni.registration.util.CourseQuery;
-import edu.uni.registration.util.CourseSpecification;
 import edu.uni.registration.util.Result;
 import edu.uni.registration.util.AdminOverrideLog;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * CatalogService implementation. Handles courses, sections, searching, and admin overrides.
@@ -41,15 +38,15 @@ public class CatalogServiceImpl implements CatalogService {
             return Result.ok(all);
         }
 
-        CourseSpecification spec = CourseSpecification.fromQuery(query, sectionRepo);
+        // CourseQuery now implements Specification directly
+        query.setSectionRepository(sectionRepo);
+        
         List<Course> result = new ArrayList<>();
-
         for (Course c : all) {
-            if (spec == null || spec.isSatisfiedBy(c)) {
+            if (query.isSatisfiedBy(c)) {
                 result.add(c);
             }
         }
-
         return Result.ok(result);
     }
 

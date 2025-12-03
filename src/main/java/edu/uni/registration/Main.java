@@ -193,9 +193,9 @@ public class Main {
 
         // --- 5. Sample current enrollments for demo (so My Schedule is not empty) ---
         // S3 is eligible for CS102, S4 for CS201, S1 has no prereqs so CS101.
-        enrollStudent(eRepo, secRepo, studentRepo, "S1", "CS101-01");
-        enrollStudent(eRepo, secRepo, studentRepo, "S3", "CS102-01");
-        enrollStudent(eRepo, secRepo, studentRepo, "S4", "CS201-01");
+        enrollStudent(eRepo, secRepo, sRepo, "S1", "CS101-01");
+        enrollStudent(eRepo, secRepo, sRepo, "S3", "CS102-01");
+        enrollStudent(eRepo, secRepo, sRepo, "S4", "CS201-01");
 
         System.out.println("Seed data loaded successfully.");
         System.out.println("--------------------------------------------------");
