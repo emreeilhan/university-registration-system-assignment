@@ -182,7 +182,7 @@ interface Specification<T> {
     + boolean isSatisfiedBy(T)
 }
 
-class CourseSpecification {
+class CourseQuery {
     - String code
     - String title
     - Integer minCredits
@@ -191,9 +191,7 @@ class CourseSpecification {
     - DayOfWeek dayOfWeek
     - LocalTime startTime
     - LocalTime endTime
-    - SectionRepository sectionRepository
     + boolean isSatisfiedBy(Course)
-    + static CourseSpecification fromQuery(CourseQuery, SectionRepository)
 }
 
 ' Inheritance Relationships
@@ -205,7 +203,7 @@ Person <|-- Admin
 Section ..|> Schedulable
 Course ..|> Searchable
 Enrollment ..|> Gradable
-CourseSpecification ..|> Specification
+CourseQuery ..|> Specification
 
 ' Associations
 Course "1" *-- "*" Section : contains

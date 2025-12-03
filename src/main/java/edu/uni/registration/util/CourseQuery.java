@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * Query object for filtering courses. Also acts as a Specification.
+ * Query object for course search filtering.
  */
 public class CourseQuery implements Specification<Course> {
     
@@ -23,35 +23,55 @@ public class CourseQuery implements Specification<Course> {
     private DayOfWeek dayOfWeek;
     private LocalTime startTime;
     private LocalTime endTime;
-    
-    // Need this for section-level filtering (instructor, time)
     private SectionRepository sectionRepo;
 
-    public String getCode() { return code; }
-    public void setCode(String code) { this.code = code; }
+    public String getCode() {
+        return code;
+    }
 
-    public String getTitle() { return title; }
-    public void setTitle(String title) { this.title = title; }
+    public void setCode(String code) {
+        this.code = code;
+    }
 
-    public Integer getMinCredits() { return minCredits; }
-    public void setMinCredits(Integer minCredits) { this.minCredits = minCredits; }
+    public String getTitle() {
+        return title;
+    }
 
-    public Integer getMaxCredits() { return maxCredits; }
-    public void setMaxCredits(Integer maxCredits) { this.maxCredits = maxCredits; }
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public Integer getMinCredits() {
+        return minCredits;
+    }
+
+    public void setMinCredits(Integer minCredits) {
+        this.minCredits = minCredits;
+    }
+
+    public Integer getMaxCredits() {
+        return maxCredits;
+    }
+
+    public void setMaxCredits(Integer maxCredits) {
+        this.maxCredits = maxCredits;
+    }
 
     public String getInstructorName() { return instructorName; }
-    public void setInstructorName(String instructorName) { this.instructorName = instructorName; }
+    public void setInstructorName(String name) { this.instructorName = name; }
 
     public DayOfWeek getDayOfWeek() { return dayOfWeek; }
-    public void setDayOfWeek(DayOfWeek dayOfWeek) { this.dayOfWeek = dayOfWeek; }
+    public void setDayOfWeek(DayOfWeek day) { this.dayOfWeek = day; }
 
     public LocalTime getStartTime() { return startTime; }
-    public void setStartTime(LocalTime startTime) { this.startTime = startTime; }
+    public void setStartTime(LocalTime t) { this.startTime = t; }
 
     public LocalTime getEndTime() { return endTime; }
-    public void setEndTime(LocalTime endTime) { this.endTime = endTime; }
+    public void setEndTime(LocalTime t) { this.endTime = t; }
     
-    public void setSectionRepository(SectionRepository repo) { this.sectionRepo = repo; }
+    public void setSectionRepository(SectionRepository repo) {
+        this.sectionRepo = repo;
+    }
 
     @Override
     public boolean isSatisfiedBy(Course course) {

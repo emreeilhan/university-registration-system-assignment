@@ -232,7 +232,7 @@ classDiagram
         +isSatisfiedBy(T) boolean
     }
     
-    class CourseSpecification {
+    class CourseQuery {
         -String code
         -String title
         -Integer minCredits
@@ -247,7 +247,7 @@ classDiagram
     Section ..|> Schedulable
     Course ..|> Searchable
     Enrollment ..|> Gradable
-    CourseSpecification ..|> Specification
+    CourseQuery ..|> Specification
     
     Course "1" *-- "*" Section : contains
     Section "*" o-- "*" Enrollment : has
