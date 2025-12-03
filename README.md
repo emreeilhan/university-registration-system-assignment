@@ -57,42 +57,18 @@ Or run via your IDE.
 
 ## Demo Scenario
 
-The app comes with pre-loaded test data:
+Pre-loaded test data:
+- **Students:** S1-S6, **Instructors:** I1-I3, **Admin:** A1
+- **Courses:** CS101 → CS102 → CS201, MATH101 → MATH102, PHYS101
+- **Sections:** 10 sections (Fall 2023, Spring 2024)
 
-- **Students:** S1-S6 (John Doe, Jane Roe, Mike Wazowski, etc.)
-- **Instructors:** I1-I3 (Alice Smith, Bob Jones, Charlie Brown)
-- **Admin:** A1 (Super Admin)
-- **Courses:** CS101, CS102, CS201, MATH101, MATH102, PHYS101 (with prerequisites)
-- **Sections:** 10 sections for Fall 2023 and Spring 2024
+### Quick Test Cases
 
-### Demo: Capacity, Waitlist, and Admin Override
+**Capacity/Waitlist:** Try enrolling multiple students in `CS101-SMALL` (capacity: 1). First gets enrolled, next ones get waitlisted, then fails when waitlist is full.
 
-Shows how capacity limits, waitlists, and admin overrides work. The waitlist auto-promotion was tricky to get right.
+**Prerequisites:** S1 can't take CS102 (no history). S3 can (passed CS101).
 
-**Step 1:** Login as Student S1, enroll in `CS101-SMALL` (capacity: 1) → Success (first student)
-
-**Step 2:** Login as Student S2, enroll in `CS101-SMALL` → Waitlisted (section full)
-
-**Step 3:** Login as Student S3, enroll in `CS101-SMALL` → Waitlisted
-
-**Step 4:** Login as Student S4, enroll in `CS101-SMALL` → Fails (waitlist also full)
-
-**Step 5:** Login as Admin A1, override enrollment for S4 → Success (bypasses capacity)
-
-**Step 6:** Login as Student S1, drop `CS101-SMALL` → S2 automatically promoted from waitlist
-
-**Step 7:** Login as Student S2, view schedule → Should see `CS101-SMALL` (now enrolled)
-
-### Other Scenarios
-
-**Prerequisites:**
-- S1 (no history) tries `CS102-01` → Fails (needs CS101)
-- S3 (passed CS101) tries `CS102-01` → Succeeds
-
-**Schedule Conflicts:**
-- Enroll S1 in `CS101-01` (Mon/Wed 9:00-10:30)
-- Try `MATH101-01` (Mon 11:00-12:30) → Succeeds (no overlap)
-- Try overlapping section → Fails (time conflict)
+**Conflicts:** Enroll in overlapping time slots → should fail.
 
 ## UML Class Diagram
 
