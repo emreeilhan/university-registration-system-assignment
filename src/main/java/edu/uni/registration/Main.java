@@ -81,12 +81,12 @@ public class Main {
         pRepo.save(i1); pRepo.save(i2); pRepo.save(i3);
 
         // Students (6)
-        Student s1 = new Student("S1", "John", "Doe", "john@uni.edu", "CS", 1);
-        Student s2 = new Student("S2", "Jane", "Roe", "jane@uni.edu", "Math", 2);
-        Student s3 = new Student("S3", "Mike", "Wazowski", "mike@uni.edu", "CS", 3);
-        Student s4 = new Student("S4", "Sully", "Sullivan", "sully@uni.edu", "Physics", 4);
-        Student s5 = new Student("S5", "Peter", "Parker", "peter@uni.edu", "CS", 1);
-        Student s6 = new Student("S6", "Tony", "Stark", "tony@uni.edu", "Engineering", 2);
+        Student s1 = new Student("S1", "Yigit can", "ersoy", "yigit@uni.edu", "CS", 1);
+        Student s2 = new Student("S2", "Bilal", "Yilmaz", "bilal@uni.edu", "Math", 2);
+        Student s3 = new Student("S3", "Emre", "Ilhan", "emre@uni.edu", "CS", 3);
+        Student s4 = new Student("S4", "Omer", "Gok", "omer@uni.edu", "Physics", 4);
+        Student s5 = new Student("S5", "Yusuf", "Yilmaz", "yusuf@uni.edu", "CS", 1);
+        Student s6 = new Student("S6", "Ahmet", "Kilic", "ahmet@uni.edu", "Engineering", 2);
         
         for (Student s : Arrays.asList(s1, s2, s3, s4, s5, s6)) {
             sRepo.save(s);
