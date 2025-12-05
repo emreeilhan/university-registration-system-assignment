@@ -1,17 +1,13 @@
 package edu.uni.registration.cli;
 
 import edu.uni.registration.model.*;
-import edu.uni.registration.repository.*;
 import edu.uni.registration.service.*;
-import edu.uni.registration.service.impl.*;
 import edu.uni.registration.util.CourseQuery;
 import edu.uni.registration.util.Result;
-import edu.uni.registration.validation.*;
 
 import java.time.DayOfWeek;
 import java.time.LocalTime;
 import java.util.List;
-import java.util.Scanner;
 import java.util.Scanner;
 
 public class CommandLineInterface {
@@ -37,32 +33,37 @@ public class CommandLineInterface {
     public void start() {
         System.out.println("Uni Registration System v1.0");
         
-        while (true) {
-            System.out.println("\n=== LOGIN MENU ===");
-            System.out.println("1. Student");
-            System.out.println("2. Instructor");
-            System.out.println("3. Admin");
-            System.out.println("0. Exit");
-            System.out.print("Choose option > ");
+        try {
+            while (true) {
+                System.out.println("\n=== LOGIN MENU ===");
+                System.out.println("1. Student");
+                System.out.println("2. Instructor");
+                System.out.println("3. Admin");
+                System.out.println("0. Exit");
+                System.out.print("Choose option > ");
 
-            String choice = scanner.nextLine();
-            
-            switch (choice) {
-                case "1":
-                    login("STUDENT");
-                    break;
-                case "2":
-                    login("INSTRUCTOR");
-                    break;
-                case "3":
-                    login("ADMIN");
-                    break;
-                case "0":
-                    System.out.println("Bye.");
-                    return;
-                default:
-                    System.out.println("Unknown option.");
+                String choice = scanner.nextLine();
+                
+                switch (choice) {
+                    case "1":
+                        login("STUDENT");
+                        break;
+                    case "2":
+                        login("INSTRUCTOR");
+                        break;
+                    case "3":
+                        login("ADMIN");
+                        break;
+                    case "0":
+                        System.out.println("Bye.");
+                        return;
+                    default:
+                        System.out.println("Unknown option.");
+                }
             }
+        } finally {
+            // Purpose: Ensure Scanner is properly closed to prevent resource leak
+            scanner.close();
         }
     }
 

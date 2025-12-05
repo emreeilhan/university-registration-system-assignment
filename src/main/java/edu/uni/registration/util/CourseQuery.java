@@ -124,8 +124,8 @@ public class CourseQuery implements Specification<Course> {
                 for (TimeSlot slot : sec.getMeetingTimes()) {
                     boolean slotMatches = true;
                     if (dayOfWeek != null && slot.getDayOfWeek() != dayOfWeek) slotMatches = false;
-                    if (startTime != null && slot.getStart().isBefore(startTime)) slotMatches = false;
-                    if (endTime != null && slot.getEnd().isAfter(endTime)) slotMatches = false;
+                    if (startTime != null && slot.getStartTime().isBefore(startTime)) slotMatches = false;
+                    if (endTime != null && slot.getEndTime().isAfter(endTime)) slotMatches = false;
                     if (slotMatches) { timeOk = true; break; }
                 }
                 if (!timeOk) continue;

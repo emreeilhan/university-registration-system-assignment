@@ -45,23 +45,24 @@ public class Main {
         // 5. Choose Interface (CLI or GUI)
         System.out.println("Choose mode: 1 for CLI, 2 for GUI");
         // Simple check to allow user to choose mode
-        Scanner sc = new Scanner(System.in);
-        // Use hasNextLine to avoid blocking if run non-interactively
-        if (sc.hasNextLine()) {
-            String mode = sc.nextLine();
-            if ("2".equals(mode)) {
-                System.out.println("Launching GUI...");
-                SwingUtilities.invokeLater(() -> {
-                    new SimpleGui(regService, catalogService, gradingService).setVisible(true);
-                });
+        try (Scanner sc = new Scanner(System.in)) {
+            // Use hasNextLine to avoid blocking if run non-interactively
+            if (sc.hasNextLine()) {
+                String mode = sc.nextLine();
+                if ("2".equals(mode)) {
+                    System.out.println("Launching GUI...");
+                    SwingUtilities.invokeLater(() -> {
+                        new SimpleGui(regService, catalogService, gradingService).setVisible(true);
+                    });
+                } else {
+                    CommandLineInterface cli = new CommandLineInterface(regService, catalogService, gradingService);
+                    cli.start();
+                }
             } else {
+                // Default to CLI if no input available
                 CommandLineInterface cli = new CommandLineInterface(regService, catalogService, gradingService);
                 cli.start();
             }
-        } else {
-            // Default to CLI if no input available
-             CommandLineInterface cli = new CommandLineInterface(regService, catalogService, gradingService);
-             cli.start();
         }
     }
 

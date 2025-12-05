@@ -32,17 +32,9 @@ public class TimeSlot implements Comparable<TimeSlot> {
     public DayOfWeek getDayOfWeek() {
         return dayOfWeek;
     }
-
-    public LocalTime getStart() {
-        return start;
-    }
     
     public LocalTime getStartTime() {
         return start;
-    }
-
-    public LocalTime getEnd() {
-        return end;
     }
     
     public LocalTime getEndTime() {
