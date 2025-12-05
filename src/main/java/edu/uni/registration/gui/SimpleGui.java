@@ -390,9 +390,7 @@ public class SimpleGui extends JFrame {
         }
     }
 
-    // =================================================================================
-    // ADMIN DASHBOARD
-    // =================================================================================
+    
 
     private JPanel createAdminDashboard() {
         JTabbedPane tabbedPane = new JTabbedPane();
