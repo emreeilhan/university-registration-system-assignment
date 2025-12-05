@@ -42,7 +42,6 @@ public class SimpleGui extends JFrame {
         cardLayout = new CardLayout();
         mainPanel = new JPanel(cardLayout);
 
-        // Add screens (Cards)
         mainPanel.add(createLoginPanel(), "LOGIN");
         mainPanel.add(createStudentDashboard(), "STUDENT");
         mainPanel.add(createInstructorDashboard(), "INSTRUCTOR");
@@ -50,7 +49,6 @@ public class SimpleGui extends JFrame {
 
         add(mainPanel);
         
-        // Start at Login
         cardLayout.show(mainPanel, "LOGIN");
     }
 
@@ -65,18 +63,16 @@ public class SimpleGui extends JFrame {
         JLabel userLabel = new JLabel("User ID:");
         JTextField userField = new JTextField(15);
         
-        // Role Selection
         JPanel rolePanel = new JPanel(new FlowLayout());
         rbStudent = new JRadioButton("Student");
         rbInstructor = new JRadioButton("Instructor");
         rbAdmin = new JRadioButton("Admin");
         
-        // Group them
         ButtonGroup bg = new ButtonGroup();
         bg.add(rbStudent);
         bg.add(rbInstructor);
         bg.add(rbAdmin);
-        rbStudent.setSelected(true); // Default
+        rbStudent.setSelected(true);
         
         rolePanel.add(rbStudent);
         rolePanel.add(rbInstructor);
@@ -149,7 +145,6 @@ public class SimpleGui extends JFrame {
     private JPanel createStudentDashboard() {
         JTabbedPane tabbedPane = new JTabbedPane();
 
-        // TAB 1: My Schedule
         JPanel schedulePanel = new JPanel(new BorderLayout());
         String[] scheduleCols = {"Section ID", "Course", "Term", "Instructor", "Status"};
         scheduleModel = new DefaultTableModel(scheduleCols, 0) {
@@ -195,7 +190,6 @@ public class SimpleGui extends JFrame {
         schedulePanel.add(btnPanel, BorderLayout.SOUTH);
         tabbedPane.addTab("My Schedule", schedulePanel);
 
-        // TAB 2: Transcript (NEW)
         JPanel transcriptPanel = new JPanel(new BorderLayout());
         String[] transCols = {"Course", "Term", "Credits", "Grade"};
         transcriptModel = new DefaultTableModel(transCols, 0);
@@ -210,7 +204,6 @@ public class SimpleGui extends JFrame {
         
         tabbedPane.addTab("Transcript", transcriptPanel);
 
-        // TAB 3: Search & Enroll
         JPanel searchPanel = new JPanel(new BorderLayout());
         JPanel topSearch = new JPanel();
         JTextField searchField = new JTextField(20);
@@ -248,7 +241,6 @@ public class SimpleGui extends JFrame {
         return createHeaderWrapper("Student Dashboard", tabbedPane);
     }
 
-    // Purpose: Refresh student schedule and transcript data
     private void refreshStudentData() {
         if (currentUserId == null || !"STUDENT".equals(currentUserRole)) return;
         
@@ -309,7 +301,6 @@ public class SimpleGui extends JFrame {
     private JPanel createInstructorDashboard() {
         JTabbedPane tabbedPane = new JTabbedPane();
         
-        // TAB 1: My Sections
         JPanel secPanel = new JPanel(new BorderLayout());
         String[] secCols = {"Section ID", "Course", "Term", "Capacity", "Enrolled"};
         insSectionModel = new DefaultTableModel(secCols, 0);
@@ -323,7 +314,6 @@ public class SimpleGui extends JFrame {
         
         tabbedPane.addTab("My Sections", secPanel);
         
-        // TAB 2: Roster & Grading
         JPanel rosterPanel = new JPanel(new BorderLayout());
         String[] rostCols = {"Student ID", "Name", "Status", "Grade"};
         rosterModel = new DefaultTableModel(rostCols, 0);
@@ -366,11 +356,9 @@ public class SimpleGui extends JFrame {
         if (row == -1) return;
         
         String secId = (String) insSectionModel.getValueAt(row, 0);
-        // Find section object
         Result<List<Section>> res = catalogService.getInstructorSections(currentUserId);
         if (res.isOk()) {
             Section target = null;
-            // Find the section manually instead of using streams
             for (Section s : res.get()) {
                 if (s.getId().equals(secId)) {
                     target = s;
@@ -386,9 +374,6 @@ public class SimpleGui extends JFrame {
                         e.getStatus(), e.getGrade().map(Grade::toString).orElse("-")
                     });
                 }
-                // Switch to roster tab
-                // Hacky way to access JTabbedPane, usually we keep reference but for simple GUI:
-                // ... assuming user clicks tab manually or we automate.
                 JOptionPane.showMessageDialog(this, "Roster loaded in 'Class Roster' tab.");
             }
         }
@@ -403,9 +388,6 @@ public class SimpleGui extends JFrame {
         
         String studentId = (String) rosterModel.getValueAt(row, 0);
         
-        // We need sectionId. Since roster is loaded from a selection, we need to track "currentSectionId".
-        // For simplicity, we can ask user or store it. Let's ask Section ID again or store it in field?
-        // Storing in field is better.
         int secRow = insSectionTable.getSelectedRow();
         if (secRow == -1) {
             JOptionPane.showMessageDialog(this, "Select the section in 'My Sections' tab again to confirm context.");
@@ -416,7 +398,7 @@ public class SimpleGui extends JFrame {
         Result<Void> res = gradingService.postGrade(currentUserId, sectionId, studentId, Grade.valueOf(gradeStr));
         if (res.isOk()) {
             JOptionPane.showMessageDialog(this, "Grade posted!");
-            loadSelectedRoster(); // Refresh
+            loadSelectedRoster();
         } else {
             JOptionPane.showMessageDialog(this, "Error: " + res.getError());
         }
@@ -427,7 +409,6 @@ public class SimpleGui extends JFrame {
     private JPanel createAdminDashboard() {
         JTabbedPane tabbedPane = new JTabbedPane();
         
-        // Tab 1: Create Course
         JPanel coursePanel = new JPanel(new GridLayout(4, 2, 10, 10));
         JTextField cCode = new JTextField();
         JTextField cTitle = new JTextField();
@@ -455,7 +436,6 @@ public class SimpleGui extends JFrame {
         JPanel p1Wrapper = new JPanel(new FlowLayout()); p1Wrapper.add(coursePanel);
         tabbedPane.addTab("New Course", p1Wrapper);
         
-        // Tab 2: Create Section
         JPanel secPanel = new JPanel(new GridLayout(5, 2, 10, 10));
         JTextField sId = new JTextField();
         JTextField sCourseCode = new JTextField();
@@ -472,11 +452,10 @@ public class SimpleGui extends JFrame {
         createSecBtn.addActionListener(e -> {
              try {
                 int cap = Integer.parseInt(sCap.getText());
-                // Find course first
                 CourseQuery q = new CourseQuery(); q.setCode(sCourseCode.getText());
                 Result<List<Course>> search = catalogService.search(q);
                 Course c = null;
-                if (search.isOk() && !search.get().isEmpty()) c = search.get().get(0); // Take first
+                if (search.isOk() && !search.get().isEmpty()) c = search.get().get(0);
                 
                 if (c == null) { JOptionPane.showMessageDialog(this, "Course not found"); return; }
                 
@@ -493,7 +472,6 @@ public class SimpleGui extends JFrame {
         JPanel p2Wrapper = new JPanel(new FlowLayout()); p2Wrapper.add(secPanel);
         tabbedPane.addTab("New Section", p2Wrapper);
         
-        // Tab 3: Assign Instructor (NEW)
         JPanel assignPanel = new JPanel(new GridLayout(4, 2, 10, 10));
         JTextField assignSecId = new JTextField();
         JTextField assignInsId = new JTextField();
@@ -503,7 +481,6 @@ public class SimpleGui extends JFrame {
         assignPanel.add(new JLabel("Instructor ID:")); assignPanel.add(assignInsId);
         assignPanel.add(new JLabel("")); assignPanel.add(assignBtn);
         
-        // Purpose: Allow admin to assign instructors to sections
         assignBtn.addActionListener(e -> {
             String secId = assignSecId.getText().trim();
             String insId = assignInsId.getText().trim();
@@ -525,7 +502,6 @@ public class SimpleGui extends JFrame {
         JPanel p3Wrapper = new JPanel(new FlowLayout()); p3Wrapper.add(assignPanel);
         tabbedPane.addTab("Assign Instructor", p3Wrapper);
         
-        // Tab 4: Override Capacity (NEW)
         JPanel overridePanel = new JPanel(new GridLayout(5, 2, 10, 10));
         JTextField overrideSecId = new JTextField();
         JTextField overrideNewCap = new JTextField();
@@ -537,7 +513,6 @@ public class SimpleGui extends JFrame {
         overridePanel.add(new JLabel("Reason:")); overridePanel.add(overrideReason);
         overridePanel.add(new JLabel("")); overridePanel.add(overrideBtn);
         
-        // Purpose: Allow admin to override section capacity with audit log
         overrideBtn.addActionListener(e -> {
             try {
                 String secId = overrideSecId.getText().trim();
@@ -588,7 +563,6 @@ public class SimpleGui extends JFrame {
         return container;
     }
     
-    // Purpose: Drop selected section with proper status validation
     private void dropSelectedSection() {
         int row = scheduleTable.getSelectedRow();
         if (row == -1) {
@@ -598,7 +572,6 @@ public class SimpleGui extends JFrame {
         String sectionId = (String) scheduleModel.getValueAt(row, 0);
         String status = (String) scheduleModel.getValueAt(row, 4);
         
-        // Purpose: Confirm drop action with user, showing current status
         int confirm = JOptionPane.showConfirmDialog(this, 
             "Are you sure you want to drop this section?\nCurrent Status: " + status,
             "Confirm Drop", 
@@ -617,7 +590,6 @@ public class SimpleGui extends JFrame {
         }
     }
     
-    // Purpose: Enroll in selected course with detailed section information
     private void enrollSelectedCourse() {
         int row = searchTable.getSelectedRow();
         if (row == -1) {
@@ -626,7 +598,6 @@ public class SimpleGui extends JFrame {
         }
 
         String courseCode = (String) searchModel.getValueAt(row, 0);
-        // Purpose: Get sections for the selected course
         var secResult = catalogService.getSectionsByCourseCode(courseCode);
         if (secResult.isFail()) {
             JOptionPane.showMessageDialog(this, "Failed: " + secResult.getError());
@@ -642,7 +613,6 @@ public class SimpleGui extends JFrame {
         if (sections.size() == 1) {
             chosen = sections.get(0);
         } else {
-            // Purpose: Show detailed section information including term and meeting times
             String[] displayOptions = new String[sections.size()];
             for (int i = 0; i < sections.size(); i++) {
                 Section s = sections.get(i);
@@ -673,7 +643,6 @@ public class SimpleGui extends JFrame {
             );
             if (selectedDisplay == null) return;
             
-            // Purpose: Extract section ID from display string
             String selectedId = selectedDisplay.substring(0, selectedDisplay.indexOf(" ["));
             chosen = sections.stream().filter(s -> s.getId().equals(selectedId)).findFirst().orElse(null);
         }

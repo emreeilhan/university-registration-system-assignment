@@ -44,9 +44,7 @@ public class Main {
 
         // 5. Choose Interface (CLI or GUI)
         System.out.println("Choose mode: 1 for CLI, 2 for GUI");
-        // Simple check to allow user to choose mode
         try (Scanner sc = new Scanner(System.in)) {
-            // Use hasNextLine to avoid blocking if run non-interactively
             if (sc.hasNextLine()) {
                 String mode = sc.nextLine();
                 if ("2".equals(mode)) {
@@ -59,7 +57,6 @@ public class Main {
                     cli.start();
                 }
             } else {
-                // Default to CLI if no input available
                 CommandLineInterface cli = new CommandLineInterface(regService, catalogService, gradingService);
                 cli.start();
             }
@@ -71,17 +68,14 @@ public class Main {
 
         // --- 1. Users (Admin, Instructors, Students) ---
         
-        // Admin
         Admin a1 = new Admin("A1", "Super", "Admin", "admin@uni.edu");
         pRepo.save(a1);
 
-        // Instructors (3)
         Instructor i1 = new Instructor("I1", "Alice", "Smith", "asmith@uni.edu", "CS", "OFF-101");
         Instructor i2 = new Instructor("I2", "Bob", "Jones", "bjones@uni.edu", "Math", "OFF-102");
         Instructor i3 = new Instructor("I3", "Charlie", "Brown", "cbrown@uni.edu", "Physics", "OFF-103");
         pRepo.save(i1); pRepo.save(i2); pRepo.save(i3);
 
-        // Students (6)
         Student s1 = new Student("S1", "Yigit can", "ersoy", "yigit@uni.edu", "CS", 1);
         Student s2 = new Student("S2", "Bilal", "Yilmaz", "bilal@uni.edu", "Math", 2);
         Student s3 = new Student("S3", "Emre", "Ilhan", "emre@uni.edu", "CS", 3);
@@ -91,8 +85,7 @@ public class Main {
         
         for (Student s : Arrays.asList(s1, s2, s3, s4, s5, s6)) {
             sRepo.save(s);
-            pRepo.save(s); // Save as Person for login lookup
-            // Save the student's transcript to the repository so it can be retrieved later
+            pRepo.save(s);
             tRepo.save(s.getTranscript());
         }
 
@@ -150,7 +143,7 @@ public class Main {
         sec1.addMeetingTime(new TimeSlot(DayOfWeek.WEDNESDAY, LocalTime.of(9, 0), LocalTime.of(10, 30), "Room 101"));
 
         Section sec2 = new Section("CS101-02", cs101, "Fall 2023", 30);
-        sec2.setInstructor(i1); i1.addAssignedSection(sec2); // Same instructor, different time
+        sec2.setInstructor(i1); i1.addAssignedSection(sec2);
         sec2.addMeetingTime(new TimeSlot(DayOfWeek.TUESDAY, LocalTime.of(14, 0), LocalTime.of(15, 30), "Room 101"));
 
         Section sec3 = new Section("MATH101-01", math101, "Fall 2023", 40);
@@ -174,7 +167,7 @@ public class Main {
         sec7.setInstructor(i2); i2.addAssignedSection(sec7);
         sec7.addMeetingTime(new TimeSlot(DayOfWeek.THURSDAY, LocalTime.of(11, 0), LocalTime.of(12, 30), "Room 202"));
 
-        Section sec8 = new Section("MATH101-02", math101, "Spring 2024", 35); // Remedial section
+        Section sec8 = new Section("MATH101-02", math101, "Spring 2024", 35);
         sec8.setInstructor(i2); i2.addAssignedSection(sec8);
         sec8.addMeetingTime(new TimeSlot(DayOfWeek.TUESDAY, LocalTime.of(16, 0), LocalTime.of(17, 30), "Room 202"));
 
@@ -182,8 +175,7 @@ public class Main {
         sec9.setInstructor(i3); i3.addAssignedSection(sec9);
         sec9.addMeetingTime(new TimeSlot(DayOfWeek.FRIDAY, LocalTime.of(9, 0), LocalTime.of(10, 30), "Lab 2"));
 
-        // Section with limited capacity to test Waitlist
-        Section sec10 = new Section("CS101-SMALL", cs101, "Spring 2024", 1); // Capacity 1
+        Section sec10 = new Section("CS101-SMALL", cs101, "Spring 2024", 1);
         sec10.setWaitlistCapacity(2);
         sec10.setInstructor(i3); i3.addAssignedSection(sec10);
         sec10.addMeetingTime(new TimeSlot(DayOfWeek.THURSDAY, LocalTime.of(9, 0), LocalTime.of(10, 0), "Room 105"));

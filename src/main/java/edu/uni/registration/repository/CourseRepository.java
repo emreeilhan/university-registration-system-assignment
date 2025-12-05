@@ -35,7 +35,7 @@ public class CourseRepository implements Repository<Course, String> {
     @Override
     public void deleteById(String code) {
         if (code == null || code.isBlank()) {
-            return; // Silinemeyecek bir şeyse sessizce ignore
+            return; // Silently ignore if code is null or blank
         }
         storage.remove(code);
     }

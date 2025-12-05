@@ -17,9 +17,8 @@ public class CommandLineInterface {
     private final GradingService gradingService;
     private final Scanner scanner;
 
-    // Temporary session state
     private String currentUserId;
-    private String currentUserRole; // STUDENT, INSTRUCTOR, ADMIN
+    private String currentUserRole;
 
     public CommandLineInterface(RegistrationService registrationService,
                                 CatalogService catalogService,
@@ -62,7 +61,6 @@ public class CommandLineInterface {
                 }
             }
         } finally {
-            // Purpose: Ensure Scanner is properly closed to prevent resource leak
             scanner.close();
         }
     }
@@ -71,7 +69,7 @@ public class CommandLineInterface {
         System.out.print("Enter ID: ");
         String id = scanner.nextLine();
         
-        // Mock auth check
+        // TODO: Implement proper authentication
         this.currentUserId = id;
         this.currentUserRole = role;
         
@@ -401,7 +399,6 @@ public class CommandLineInterface {
         try {
             int cap = Integer.parseInt(scanner.nextLine());
             
-            // Find course by code (using first match)
             CourseQuery q = new CourseQuery();
             q.setCode(cCode);
             Result<List<Course>> search = catalogService.search(q);
