@@ -152,8 +152,34 @@ public class SimpleGui extends JFrame {
         // TAB 1: My Schedule
         JPanel schedulePanel = new JPanel(new BorderLayout());
         String[] scheduleCols = {"Section ID", "Course", "Term", "Instructor", "Status"};
-        scheduleModel = new DefaultTableModel(scheduleCols, 0);
-        scheduleTable = new JTable(scheduleModel);
+        scheduleModel = new DefaultTableModel(scheduleCols, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false; 
+            }
+        };
+        scheduleTable = new JTable(scheduleModel) {
+            @Override
+            public java.awt.Component prepareRenderer(javax.swing.table.TableCellRenderer renderer, int row, int column) {
+                java.awt.Component c = super.prepareRenderer(renderer, row, column);
+                
+                if (!isRowSelected(row)) {
+                    String status = (String) getValueAt(row, 4);
+                    if ("WAITLISTED".equals(status)) {
+                        c.setBackground(new Color(255, 250, 205)); // Light yellow for waitlist
+                    } else if ("ENROLLED".equals(status)) {
+                        c.setBackground(new Color(230, 255, 230)); // Light green for enrolled
+                    } else if ("DROPPED".equals(status)) {
+                        c.setBackground(new Color(255, 230, 230)); // Light red for dropped
+                    } else {
+                        c.setBackground(Color.WHITE);
+                    }
+                } else {
+                    c.setBackground(getSelectionBackground());
+                }
+                return c;
+            }
+        };
         
         JButton refreshBtn = new JButton("Refresh");
         refreshBtn.addActionListener(e -> refreshStudentData());
@@ -222,15 +248,16 @@ public class SimpleGui extends JFrame {
         return createHeaderWrapper("Student Dashboard", tabbedPane);
     }
 
+    // Purpose: Refresh student schedule and transcript data
     private void refreshStudentData() {
         if (currentUserId == null || !"STUDENT".equals(currentUserRole)) return;
         
-        // 1. Schedule
+        // 1. Schedule - Show both ENROLLED and WAITLISTED sections
         scheduleModel.setRowCount(0);
         Result<List<Section>> res = registrationService.getCurrentSchedule(currentUserId, null);
         if (res.isOk()) {
             for (Section s : res.get()) {
-                String status = "ENROLLED";
+                String status = "UNKNOWN";
                 for(Enrollment e : s.getRoster()) {
                      if(e.getStudent().getId().equals(currentUserId)) {
                          status = e.getStatus().toString();
@@ -245,20 +272,25 @@ public class SimpleGui extends JFrame {
             }
         }
         
-        // 2. Transcript
+        // 2. Transcript - Handle empty transcript gracefully
         transcriptModel.setRowCount(0);
         Result<Transcript> tRes = registrationService.getTranscript(currentUserId);
         if (tRes.isOk()) {
             Transcript t = tRes.get();
-            for (TranscriptEntry e : t.getEntries()) {
-                transcriptModel.addRow(new Object[]{
-                    e.getSection().getCourse().getCode(),
-                    e.getSection().getTerm(),
-                    e.getCredits(),
-                    e.getGrade()
-                });
+            if (t.getEntries().isEmpty()) {
+                
+                gpaLabel.setText("No completed courses yet. GPA: 0.00 | Total Credits: 0");
+            } else {
+                for (TranscriptEntry e : t.getEntries()) {
+                    transcriptModel.addRow(new Object[]{
+                        e.getSection().getCourse().getCode(),
+                        e.getSection().getTerm(),
+                        e.getCredits(),
+                        e.getGrade()
+                    });
+                }
+                gpaLabel.setText(String.format("GPA: %.2f | Total Credits: %d", t.getGpa(), t.getTotalCredits()));
             }
-            gpaLabel.setText(String.format("GPA: %.2f | Total Credits: %d", t.getGpa(), t.getTotalCredits()));
         } else {
              gpaLabel.setText("GPA: N/A (Error: " + tRes.getError() + ")");
         }
@@ -411,8 +443,12 @@ public class SimpleGui extends JFrame {
             try {
                 int cr = Integer.parseInt(cCredits.getText());
                 Result<Course> res = catalogService.createCourse(cCode.getText(), cTitle.getText(), cr);
-                if (res.isOk()) JOptionPane.showMessageDialog(this, "Course created!");
-                else JOptionPane.showMessageDialog(this, "Error: " + res.getError());
+                if (res.isOk()) {
+                    JOptionPane.showMessageDialog(this, "Course created successfully!");
+                    cCode.setText(""); cTitle.setText(""); cCredits.setText("");
+                } else {
+                    JOptionPane.showMessageDialog(this, "Error: " + res.getError());
+                }
             } catch(Exception ex) { JOptionPane.showMessageDialog(this, "Invalid input"); }
         });
         
@@ -445,13 +481,88 @@ public class SimpleGui extends JFrame {
                 if (c == null) { JOptionPane.showMessageDialog(this, "Course not found"); return; }
                 
                 Result<Section> res = catalogService.createSection(sId.getText(), c, sTerm.getText(), cap);
-                if (res.isOk()) JOptionPane.showMessageDialog(this, "Section created!");
-                else JOptionPane.showMessageDialog(this, "Error: " + res.getError());
-            } catch(Exception ex) { JOptionPane.showMessageDialog(this, "Invalid input"); }
+                if (res.isOk()) {
+                    JOptionPane.showMessageDialog(this, "Section created successfully!");
+                    sId.setText(""); sCourseCode.setText(""); sTerm.setText(""); sCap.setText("");
+                } else {
+                    JOptionPane.showMessageDialog(this, "Error: " + res.getError());
+                }
+            } catch(Exception ex) { JOptionPane.showMessageDialog(this, "Invalid input: " + ex.getMessage()); }
         });
         
         JPanel p2Wrapper = new JPanel(new FlowLayout()); p2Wrapper.add(secPanel);
         tabbedPane.addTab("New Section", p2Wrapper);
+        
+        // Tab 3: Assign Instructor (NEW)
+        JPanel assignPanel = new JPanel(new GridLayout(4, 2, 10, 10));
+        JTextField assignSecId = new JTextField();
+        JTextField assignInsId = new JTextField();
+        JButton assignBtn = new JButton("Assign Instructor");
+        
+        assignPanel.add(new JLabel("Section ID:")); assignPanel.add(assignSecId);
+        assignPanel.add(new JLabel("Instructor ID:")); assignPanel.add(assignInsId);
+        assignPanel.add(new JLabel("")); assignPanel.add(assignBtn);
+        
+        // Purpose: Allow admin to assign instructors to sections
+        assignBtn.addActionListener(e -> {
+            String secId = assignSecId.getText().trim();
+            String insId = assignInsId.getText().trim();
+            
+            if (secId.isEmpty() || insId.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Both Section ID and Instructor ID are required");
+                return;
+            }
+            
+            Result<Void> res = catalogService.assignInstructor(secId, insId);
+            if (res.isOk()) {
+                JOptionPane.showMessageDialog(this, "Instructor assigned successfully!");
+                assignSecId.setText(""); assignInsId.setText("");
+            } else {
+                JOptionPane.showMessageDialog(this, "Error: " + res.getError());
+            }
+        });
+        
+        JPanel p3Wrapper = new JPanel(new FlowLayout()); p3Wrapper.add(assignPanel);
+        tabbedPane.addTab("Assign Instructor", p3Wrapper);
+        
+        // Tab 4: Override Capacity (NEW)
+        JPanel overridePanel = new JPanel(new GridLayout(5, 2, 10, 10));
+        JTextField overrideSecId = new JTextField();
+        JTextField overrideNewCap = new JTextField();
+        JTextField overrideReason = new JTextField();
+        JButton overrideBtn = new JButton("Override Capacity");
+        
+        overridePanel.add(new JLabel("Section ID:")); overridePanel.add(overrideSecId);
+        overridePanel.add(new JLabel("New Capacity:")); overridePanel.add(overrideNewCap);
+        overridePanel.add(new JLabel("Reason:")); overridePanel.add(overrideReason);
+        overridePanel.add(new JLabel("")); overridePanel.add(overrideBtn);
+        
+        // Purpose: Allow admin to override section capacity with audit log
+        overrideBtn.addActionListener(e -> {
+            try {
+                String secId = overrideSecId.getText().trim();
+                int newCap = Integer.parseInt(overrideNewCap.getText().trim());
+                String reason = overrideReason.getText().trim();
+                
+                if (secId.isEmpty() || reason.isEmpty()) {
+                    JOptionPane.showMessageDialog(this, "Section ID and Reason are required");
+                    return;
+                }
+                
+                Result<Void> res = catalogService.adminOverrideCapacity(secId, newCap, currentUserId, reason);
+                if (res.isOk()) {
+                    JOptionPane.showMessageDialog(this, "Capacity override successful! (Logged)");
+                    overrideSecId.setText(""); overrideNewCap.setText(""); overrideReason.setText("");
+                } else {
+                    JOptionPane.showMessageDialog(this, "Error: " + res.getError());
+                }
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(this, "Invalid capacity value");
+            }
+        });
+        
+        JPanel p4Wrapper = new JPanel(new FlowLayout()); p4Wrapper.add(overridePanel);
+        tabbedPane.addTab("Override Capacity", p4Wrapper);
         
         return createHeaderWrapper("Admin Dashboard", tabbedPane);
     }
@@ -477,6 +588,7 @@ public class SimpleGui extends JFrame {
         return container;
     }
     
+    // Purpose: Drop selected section with proper status validation
     private void dropSelectedSection() {
         int row = scheduleTable.getSelectedRow();
         if (row == -1) {
@@ -484,16 +596,28 @@ public class SimpleGui extends JFrame {
             return;
         }
         String sectionId = (String) scheduleModel.getValueAt(row, 0);
+        String status = (String) scheduleModel.getValueAt(row, 4);
+        
+        // Purpose: Confirm drop action with user, showing current status
+        int confirm = JOptionPane.showConfirmDialog(this, 
+            "Are you sure you want to drop this section?\nCurrent Status: " + status,
+            "Confirm Drop", 
+            JOptionPane.YES_NO_OPTION);
+        
+        if (confirm != JOptionPane.YES_OPTION) {
+            return;
+        }
         
         Result<Void> res = registrationService.dropStudentInSection(currentUserId, sectionId);
         if (res.isOk()) {
-            JOptionPane.showMessageDialog(this, "Dropped successfully!");
+            JOptionPane.showMessageDialog(this, "Section dropped successfully!");
             refreshStudentData();
         } else {
             JOptionPane.showMessageDialog(this, "Error: " + res.getError());
         }
     }
     
+    // Purpose: Enroll in selected course with detailed section information
     private void enrollSelectedCourse() {
         int row = searchTable.getSelectedRow();
         if (row == -1) {
@@ -502,8 +626,7 @@ public class SimpleGui extends JFrame {
         }
 
         String courseCode = (String) searchModel.getValueAt(row, 0);
-        Result<List<Course>> searchResult = catalogService.search(new CourseQuery());
-        // Get sections for the selected course
+        // Purpose: Get sections for the selected course
         var secResult = catalogService.getSectionsByCourseCode(courseCode);
         if (secResult.isFail()) {
             JOptionPane.showMessageDialog(this, "Failed: " + secResult.getError());
@@ -519,26 +642,56 @@ public class SimpleGui extends JFrame {
         if (sections.size() == 1) {
             chosen = sections.get(0);
         } else {
-            String[] ids = sections.stream().map(Section::getId).toArray(String[]::new);
-            String selectedId = (String) JOptionPane.showInputDialog(
+            // Purpose: Show detailed section information including term and meeting times
+            String[] displayOptions = new String[sections.size()];
+            for (int i = 0; i < sections.size(); i++) {
+                Section s = sections.get(i);
+                StringBuilder meetingInfo = new StringBuilder();
+                for (TimeSlot ts : s.getMeetingTimes()) {
+                    if (meetingInfo.length() > 0) meetingInfo.append(", ");
+                    meetingInfo.append(ts.getDayOfWeek()).append(" ")
+                              .append(ts.getStartTime()).append("-").append(ts.getEndTime());
+                }
+                int enrolled = 0;
+                for (Enrollment e : s.getRoster()) {
+                    if (e.getStatus() == Enrollment.EnrollmentStatus.ENROLLED) enrolled++;
+                }
+                displayOptions[i] = String.format("%s [%s] - %s (%d/%d enrolled)", 
+                    s.getId(), s.getTerm(), 
+                    meetingInfo.length() > 0 ? meetingInfo.toString() : "TBA",
+                    enrolled, s.getCapacity());
+            }
+            
+            String selectedDisplay = (String) JOptionPane.showInputDialog(
                     this,
                     "Choose section to enroll:",
                     "Select Section",
                     JOptionPane.PLAIN_MESSAGE,
                     null,
-                    ids,
-                    ids[0]
+                    displayOptions,
+                    displayOptions[0]
             );
-            if (selectedId == null) return;
+            if (selectedDisplay == null) return;
+            
+            // Purpose: Extract section ID from display string
+            String selectedId = selectedDisplay.substring(0, selectedDisplay.indexOf(" ["));
             chosen = sections.stream().filter(s -> s.getId().equals(selectedId)).findFirst().orElse(null);
+        }
+
+        if (chosen == null) {
+            JOptionPane.showMessageDialog(this, "Section selection failed.");
+            return;
         }
 
         Result<Enrollment> res = registrationService.enrollStudentInSection(currentUserId, chosen.getId());
         if (res.isOk()) {
-            JOptionPane.showMessageDialog(this, "Enrolled! Status: " + res.get().getStatus());
+            String statusMsg = res.get().getStatus() == Enrollment.EnrollmentStatus.WAITLISTED ?
+                "You have been added to the waitlist!" :
+                "Successfully enrolled!";
+            JOptionPane.showMessageDialog(this, statusMsg + "\nStatus: " + res.get().getStatus());
             refreshStudentData();
         } else {
-            JOptionPane.showMessageDialog(this, "Failed: " + res.getError());
+            JOptionPane.showMessageDialog(this, "Enrollment Failed:\n" + res.getError());
         }
     }
 }

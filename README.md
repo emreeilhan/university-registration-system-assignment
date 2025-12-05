@@ -11,11 +11,13 @@ Java app for university course registration. Handles enrollments, grading, and t
     - Schedule conflict detection
 - **Admin Overrides:** Admins can bypass rules, but everything gets logged
 - **Course Search:** Filter by code, title, credits, instructor, or time
+- **GUI Interface:** Modern Swing-based graphical interface with color-coded status indicators
 - **Architecture:**
     - Model: Core entities (Student, Course, Section, etc.)
     - Repository: In-memory storage using Repository Pattern
     - Service: Business logic returns `Result<T>` instead of throwing exceptions
     - CLI: Command-line interface
+    - GUI: Graphical user interface with role-based dashboards
 
 ## Project Structure
 
@@ -28,6 +30,7 @@ src/main/java/edu/uni/registration/
 ├── validation/     # Logic for conflicts, prerequisites, capacity
 ├── util/           # Helpers (Result<T>, AdminOverrideLog)
 ├── cli/            # Command Line Interface logic
+├── gui/            # Graphical User Interface (Swing)
 └── Main.java       # Application entry point (DI & Seeding)
 ```
 
@@ -35,9 +38,25 @@ src/main/java/edu/uni/registration/
 
 ### Prerequisites
 - Java JDK 11+
-- Maven (or just use javac)
+- Maven
 
 ### Compile & Run
+
+#### Using Maven (Recommended)
+
+```bash
+# Compile the project
+mvn clean compile
+
+# Run with Maven
+mvn exec:java -Dexec.mainClass="edu.uni.registration.Main"
+
+# When prompted, choose interface:
+# 1 for CLI (Command Line Interface)
+# 2 for GUI (Graphical User Interface)
+```
+
+#### Using Java directly
 
 ```bash
 # Compile
@@ -54,6 +73,28 @@ mvn test
 ```
 
 Or run via your IDE.
+
+### GUI Features
+
+The GUI provides three role-based dashboards:
+
+**Student Dashboard:**
+- My Schedule tab: View enrolled and waitlisted sections with color-coded status
+  - Green: Enrolled
+  - Yellow: Waitlisted
+  - Red: Dropped
+- Transcript tab: View completed courses, grades, and GPA
+- Search & Enroll tab: Search courses and enroll in sections with detailed information
+
+**Instructor Dashboard:**
+- My Sections tab: View assigned sections
+- Class Roster tab: View enrolled students and post grades
+
+**Admin Dashboard:**
+- New Course tab: Create new courses
+- New Section tab: Create new sections
+- Assign Instructor tab: Assign instructors to sections
+- Override Capacity tab: Override section capacity with audit logging
 
 ## Demo Scenario
 
@@ -262,6 +303,40 @@ mvn test
 # Or run specific test: mvn test -Dtest=TimeSlotTest
 ```
 
+## Recent Improvements (December 2025)
+
+### GUI Enhancements
+
+1. **Fixed Schedule Display:**
+   - Now correctly shows both ENROLLED and WAITLISTED sections
+   - Previously only ENROLLED sections were visible
+
+2. **Enhanced Drop Functionality:**
+   - Added confirmation dialog before dropping
+   - Shows current enrollment status in confirmation
+   - Better error handling
+
+3. **Improved Section Selection:**
+   - Displays term, meeting times, and capacity information
+   - Shows enrolled/capacity ratio (e.g., "15/30 enrolled")
+   - Clear distinction between enrolled and waitlisted status
+
+4. **Visual Status Indicators:**
+   - Color-coded schedule table:
+     - Light green: Enrolled
+     - Light yellow: Waitlisted
+     - Light red: Dropped
+   - Makes status immediately visible
+
+5. **Better Transcript Handling:**
+   - User-friendly message for empty transcripts
+   - Clear display of GPA and total credits
+
+6. **Admin Features:**
+   - Added Instructor Assignment tab
+   - Added Capacity Override tab with audit logging
+   - Input validation and clear success/error messages
+
 ## Notes
 
 - **No persistence:** Everything is in-memory. I didn't implement a database because this was meant to be a demo project. Adding JDBC or JPA would be straightforward though.
@@ -269,4 +344,6 @@ mvn test
 - **CLI could be better:** Error messages are pretty basic. Could add input validation and clearer prompts, but it works for testing the core logic.
 
 - **Waitlist logic:** The auto-promotion when someone drops was tricky. Had to make sure it only promotes the first waitlisted student and updates their status correctly.
+
+- **GUI vs CLI:** Both interfaces use the same service layer, demonstrating proper separation of concerns.
 

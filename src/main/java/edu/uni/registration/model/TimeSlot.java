@@ -36,8 +36,16 @@ public class TimeSlot implements Comparable<TimeSlot> {
     public LocalTime getStart() {
         return start;
     }
+    
+    public LocalTime getStartTime() {
+        return start;
+    }
 
     public LocalTime getEnd() {
+        return end;
+    }
+    
+    public LocalTime getEndTime() {
         return end;
     }
 

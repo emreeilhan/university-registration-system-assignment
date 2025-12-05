@@ -128,7 +128,7 @@ public class RegistrationServiceImpl implements RegistrationService {
         List<Section> result = new ArrayList<>();
 
         for (Enrollment e : enrollments) {
-            if (e.getStatus() != EnrollmentStatus.ENROLLED) {
+            if (e.getStatus() != EnrollmentStatus.ENROLLED && e.getStatus() != EnrollmentStatus.WAITLISTED) {
                 continue;
             }
             Section section = e.getSection();
@@ -143,7 +143,8 @@ public class RegistrationServiceImpl implements RegistrationService {
                 continue;
             }
             for (Enrollment e : section.getRoster()) {
-                if (e.getStatus() == EnrollmentStatus.ENROLLED && studentId.equals(e.getStudent().getId())) {
+                if ((e.getStatus() == EnrollmentStatus.ENROLLED || e.getStatus() == EnrollmentStatus.WAITLISTED) 
+                    && studentId.equals(e.getStudent().getId())) {
                     if (!result.contains(section)) {
                         result.add(section);
                     }
