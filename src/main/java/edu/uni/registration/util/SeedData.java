@@ -7,22 +7,10 @@ import java.time.DayOfWeek;
 import java.time.LocalTime;
 import java.util.Arrays;
 
-/**
- * Utility class for seeding initial data into the registration system.
- * Purpose: Provides sample data for development and testing purposes.
- */
+// Helper class for adding test data to the system
 public class SeedData {
     
-    /**
-     * Seeds the system with initial data including users, courses, sections, and enrollments.
-     * 
-     * @param sRepo Student repository
-     * @param cRepo Course repository
-     * @param secRepo Section repository
-     * @param pRepo Person repository
-     * @param tRepo Transcript repository
-     * @param eRepo Enrollment repository
-     */
+    // Creates sample users, courses, sections, enrollments etc
     public static void seedData(
             StudentRepository sRepo,
             CourseRepository cRepo,
@@ -33,7 +21,7 @@ public class SeedData {
         
         System.out.println("Seeding data...");
 
-        // --- 1. Users (Admin, Instructors, Students) ---
+        // create users first
         
         Admin a1 = new Admin("A1", "Super", "Admin", "admin@uni.edu");
         pRepo.save(a1);
@@ -58,21 +46,17 @@ public class SeedData {
             tRepo.save(s.getTranscript());
         }
 
-        // --- 2. Courses (6 Courses with Prerequisites) ---
-        
-        // Chain 1: CS101 -> CS102 -> CS201
+        // create courses with prereqs
         Course cs101 = new Course("CS101", "Intro to CS", 3);
         Course cs102 = new Course("CS102", "Data Structures", 4);
         cs102.addPrerequisite("CS101");
         Course cs201 = new Course("CS201", "Algorithms", 4);
         cs201.addPrerequisite("CS102");
 
-        // Chain 2: MATH101 -> MATH102
         Course math101 = new Course("MATH101", "Calculus I", 4);
         Course math102 = new Course("MATH102", "Calculus II", 4);
         math102.addPrerequisite("MATH101");
 
-        // Chain 3: MATH101 -> PHYS101 (Physics requires Calculus)
         Course phys101 = new Course("PHYS101", "Physics I", 4);
         phys101.addPrerequisite("MATH101");
 
@@ -80,32 +64,28 @@ public class SeedData {
             cRepo.save(c);
         }
 
-        // --- 3. Preload Transcripts (Past History) ---
-        // We create a "dummy" past section just to record grades.
-        
+        // add some past grades so students can enroll in advanced courses
         Section pastCs101 = new Section("PAST-CS101", cs101, "Spring 2023", 50);
         Section pastMath101 = new Section("PAST-MATH101", math101, "Spring 2023", 50);
         Section pastCs102 = new Section("PAST-CS102", cs102, "Spring 2023", 50);
 
-        // S3 has passed CS101 -> Can take CS102
+        // S3 passed CS101
         Transcript t3 = s3.getTranscript();
         t3.addEntry(new TranscriptEntry(pastCs101, Grade.B));
         tRepo.save(t3);
 
-        // S4 has passed CS101 and CS102 -> Can take CS201
+        // S4 passed both
         Transcript t4 = s4.getTranscript();
         t4.addEntry(new TranscriptEntry(pastCs101, Grade.A));
         t4.addEntry(new TranscriptEntry(pastCs102, Grade.A));
         tRepo.save(t4);
         
-        // S6 has passed MATH101 -> Can take MATH102 or PHYS101
+        // S6 passed math
         Transcript t6 = s6.getTranscript();
         t6.addEntry(new TranscriptEntry(pastMath101, Grade.C));
         tRepo.save(t6);
 
-        // --- 4. Sections (10 Offerings across Fall 2023 and Spring 2024) ---
-
-        // Fall 2023
+        // create sections for fall and spring
         Section sec1 = new Section("CS101-01", cs101, "Fall 2023", 30);
         sec1.setInstructor(i1); 
         i1.addAssignedSection(sec1);
@@ -127,7 +107,6 @@ public class SeedData {
         i3.addAssignedSection(sec4);
         sec4.addMeetingTime(new TimeSlot(DayOfWeek.TUESDAY, LocalTime.of(9, 30), LocalTime.of(11, 0), "Lab 1"));
 
-        // Spring 2024
         Section sec5 = new Section("CS102-01", cs102, "Spring 2024", 25);
         sec5.setInstructor(i1); 
         i1.addAssignedSection(sec5);
@@ -163,8 +142,7 @@ public class SeedData {
             secRepo.save(s);
         }
 
-        // --- 5. Sample current enrollments for demo (so My Schedule is not empty) ---
-        // S3 is eligible for CS102, S4 for CS201, S1 has no prereqs so CS101.
+        // enroll some students so their schedules aren't empty
         enrollStudent(eRepo, secRepo, sRepo, "S1", "CS101-01");
         enrollStudent(eRepo, secRepo, sRepo, "S3", "CS102-01");
         enrollStudent(eRepo, secRepo, sRepo, "S4", "CS201-01");
@@ -179,15 +157,7 @@ public class SeedData {
         System.out.println("--------------------------------------------------");
     }
 
-    /**
-     * Helper method to enroll a student in a section.
-     * 
-     * @param eRepo Enrollment repository
-     * @param secRepo Section repository
-     * @param sRepo Student repository
-     * @param studentId Student ID
-     * @param sectionId Section ID
-     */
+    // helper to enroll student in a section
     private static void enrollStudent(
             EnrollmentRepository eRepo,
             SectionRepository secRepo,
@@ -206,3 +176,4 @@ public class SeedData {
         );
     }
 }
+
