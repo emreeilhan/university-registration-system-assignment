@@ -77,15 +77,31 @@ public class CourseQuery implements Specification<Course> {
     public boolean isSatisfiedBy(Course course) {
         if (course == null) return false;
         
-        if (code != null && !code.isBlank()) {
-            if (!course.getCode().toLowerCase(Locale.ROOT).contains(code.toLowerCase(Locale.ROOT))) {
+        // If code and title are the same (normal keyword search), use OR logic
+        boolean codeTitleSame = (code != null && title != null && 
+                                !code.isBlank() && !title.isBlank() && 
+                                code.equalsIgnoreCase(title));
+        
+        if (codeTitleSame) {
+            // OR logic: match if code OR title contains the keyword
+            String keyword = code.toLowerCase(Locale.ROOT);
+            boolean codeMatch = course.getCode().toLowerCase(Locale.ROOT).contains(keyword);
+            boolean titleMatch = course.getTitle().toLowerCase(Locale.ROOT).contains(keyword);
+            if (!codeMatch && !titleMatch) {
                 return false;
             }
-        }
-        
-        if (title != null && !title.isBlank()) {
-            if (!course.getTitle().toLowerCase(Locale.ROOT).contains(title.toLowerCase(Locale.ROOT))) {
-                return false;
+        } else {
+            // AND logic for advanced search: both must match if both are set
+            if (code != null && !code.isBlank()) {
+                if (!course.getCode().toLowerCase(Locale.ROOT).contains(code.toLowerCase(Locale.ROOT))) {
+                    return false;
+                }
+            }
+            
+            if (title != null && !title.isBlank()) {
+                if (!course.getTitle().toLowerCase(Locale.ROOT).contains(title.toLowerCase(Locale.ROOT))) {
+                    return false;
+                }
             }
         }
 

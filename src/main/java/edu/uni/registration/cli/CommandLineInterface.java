@@ -154,16 +154,38 @@ public class CommandLineInterface {
                         }
 
                         Result<List<Course>> advRes = catalogService.search(q);
-                        if (advRes.isOk()) advRes.get().forEach(System.out::println);
-                        else System.out.println("Error: " + advRes.getError());
+                        if (advRes.isOk()) {
+                            List<Course> results = advRes.get();
+                            if (results.isEmpty()) {
+                                System.out.println("No courses found matching your search criteria.");
+                            } else {
+                                System.out.println("Found " + results.size() + " course(s):");
+                                results.forEach(System.out::println);
+                            }
+                        } else {
+                            System.out.println("Error: " + advRes.getError());
+                        }
                     } else {
                         System.out.print("Enter search keyword (or press enter for all): ");
                         String queryStr = scanner.nextLine();
                         CourseQuery query = new CourseQuery();
-                        query.setTitle(queryStr);
+                        // Search in both code and title for normal search
+                        if (queryStr.isBlank()) {
+                            // Empty search returns all courses
+                            query = null;
+                        } else {
+                            query.setCode(queryStr);
+                            query.setTitle(queryStr);
+                        }
                         Result<List<Course>> searchResult = catalogService.search(query);
                         if (searchResult.isOk()) {
-                            searchResult.get().forEach(System.out::println);
+                            List<Course> results = searchResult.get();
+                            if (results.isEmpty()) {
+                                System.out.println("No courses found matching your search.");
+                            } else {
+                                System.out.println("Found " + results.size() + " course(s):");
+                                results.forEach(System.out::println);
+                            }
                         } else {
                             System.out.println("Error: " + searchResult.getError());
                         }
