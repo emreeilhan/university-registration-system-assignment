@@ -103,13 +103,98 @@ Pre-loaded test data:
 - **Courses:** CS101 → CS102 → CS201, MATH101 → MATH102, PHYS101
 - **Sections:** 10 sections (Fall 2023, Spring 2024)
 
-### Quick Test Cases
+### Demo Script (Step-by-Step)
 
-**Capacity/Waitlist:** Try enrolling multiple students in `CS101-SMALL` (capacity: 1). First gets enrolled, next ones get waitlisted, then fails when waitlist is full.
+Follow these steps to demonstrate the system's core functionality:
 
-**Prerequisites:** S1 can't take CS102 (no history). S3 can (passed CS101).
+#### ✅ Case 1: Successful Enrollment
 
-**Conflicts:** Enroll in overlapping time slots → should fail.
+```
+1. Start the application: mvn exec:java -Dexec.mainClass="edu.uni.registration.Main"
+2. Choose: 1 (CLI)
+3. Choose: 1 (Student)
+4. Enter ID: S3
+5. Select: 2 (Enroll in Section)
+6. Enter Section ID: CS102-01
+7. Expected: "Success! Status: ENROLLED"
+   (S3 passed CS101 with grade B, so prerequisite is satisfied)
+```
+
+#### ❌ Case 2: Prerequisite Failure
+
+```
+1. Choose: 1 (Student)
+2. Enter ID: S1
+3. Select: 2 (Enroll in Section)
+4. Enter Section ID: CS102-01
+5. Expected: "Failed: Prereqs not met"
+   (S1 has no transcript history, hasn't completed CS101)
+```
+
+#### ❌ Case 3: Schedule Conflict Failure
+
+```
+1. Choose: 1 (Student)
+2. Enter ID: S1
+3. Select: 2 (Enroll in Section)
+4. Enter Section ID: CS101-01
+5. Expected: "Success! Status: ENROLLED"
+6. Select: 2 (Enroll in Section)
+7. Enter Section ID: CS102-01 (Spring 2024, Mon 10:00-11:30)
+   -- First need to satisfy prereq, so let's try a different conflict --
+8. Enter Section ID: MATH101-01 (Fall 2023, Mon 11:00-12:30)
+   -- This doesn't conflict with CS101-01 (Mon 9:00-10:30), so try: --
+9. For conflict demo, use S3 who is already in CS102-01:
+   - Login as S3
+   - Try to enroll in CS101-01 (Mon/Wed 9:00-10:30)
+   - Then try CS102-01 (Mon 10:00-11:30) - OVERLAPS!
+   - Expected: "Failed: Time conflict with CS101-01"
+```
+
+#### ❌ Case 4: Capacity/Waitlist Failure
+
+```
+1. Choose: 1 (Student)
+2. Enter ID: S1
+3. Select: 2 (Enroll in Section)
+4. Enter Section ID: CS101-SMALL (capacity: 1, waitlist: 2)
+5. Expected: "Success! Status: ENROLLED" (first student)
+
+6. Logout, login as S2
+7. Enroll in CS101-SMALL
+8. Expected: "Success! Status: WAITLISTED" (waitlist spot 1)
+
+9. Logout, login as S5
+10. Enroll in CS101-SMALL
+11. Expected: "Success! Status: WAITLISTED" (waitlist spot 2)
+
+12. Logout, login as S6
+13. Enroll in CS101-SMALL
+14. Expected: "Failed: Section/Waitlist full"
+```
+
+#### 🔧 Case 5: Admin Override
+
+```
+1. Choose: 3 (Admin)
+2. Enter ID: A1
+3. Select: 5 (Override Enrollment - Force Add)
+4. Enter Student ID: S1
+5. Enter Section ID: CS102-01
+6. Enter Reason: "Department head approval"
+7. Expected: "Student forcefully enrolled. Status: ENROLLED"
+   (Bypasses prerequisite check, logged for audit)
+```
+
+### Summary Table
+
+| Case | User | Action | Expected Result |
+|------|------|--------|-----------------|
+| 1 | S3 | Enroll CS102-01 | ✅ Success (prereq met) |
+| 2 | S1 | Enroll CS102-01 | ❌ Prereqs not met |
+| 3 | S3 | Enroll overlapping section | ❌ Time conflict |
+| 4 | S6 | Enroll full section | ❌ Section/Waitlist full |
+| 5 | A1 | Force enroll S1 | ✅ Admin override success |
 
 ## UML Class Diagram
 

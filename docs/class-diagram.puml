@@ -1,231 +1,378 @@
-@startuml
-!theme plain
+@startuml University Course Registration System
+scale 0.75
 skinparam classAttributeIconSize 0
+skinparam classFontSize 10
+skinparam defaultFontSize 9
+skinparam packageFontSize 11
+skinparam wrapWidth 150
+skinparam nodesep 40
+skinparam ranksep 30
 
-' Abstract Classes
-abstract class Person {
-    - String id
-    - String firstName
-    - String lastName
-    - String email
-    + String getId()
-    + String getFirstName()
-    + void setFirstName(String)
-    + String getLastName()
-    + void setLastName(String)
-    + String getEmail()
-    + void setEmail(String)
-    + String getFullName()
-    + {abstract} String role()
-    + {abstract} String displayProfile()
+title University Course Registration System - Class Diagram
+
+' ==================== MODEL ====================
+package "model" #DDDDDD {
+    
+    abstract class Person {
+        -id: String
+        -firstName: String
+        -lastName: String
+        -email: String
+        +getId(): String
+        +getFullName(): String
+        +{abstract} role(): String
+        +{abstract} displayProfile(): String
+    }
+
+    class Student {
+        -major: String
+        -year: int
+        -transcript: Transcript
+        -currentEnrollments: List<Enrollment>
+        +getMajor(): String
+        +getTranscript(): Transcript
+        +addEnrollment(Enrollment): void
+    }
+
+    class Instructor {
+        -department: String
+        -officeNumber: String
+        -assignedSections: List<Section>
+        +getDepartment(): String
+        +getAssignedSections(): List<Section>
+        +addAssignedSection(Section): void
+    }
+
+    class Admin {
+        +role(): String
+    }
+
+    class Course {
+        -code: String
+        -title: String
+        -credits: int
+        -prerequisites: List<String>
+        +getCode(): String
+        +getCredits(): int
+        +getPrerequisites(): List<String>
+        +matchesKeyword(String): boolean
+    }
+
+    class Section {
+        -id: String
+        -course: Course
+        -term: String
+        -instructor: Instructor
+        -capacity: int
+        -waitlistCapacity: int
+        -meetingTimes: List<TimeSlot>
+        -roster: List<Enrollment>
+        +getId(): String
+        +getCourse(): Course
+        +getMeetingTimes(): List<TimeSlot>
+        +isFull(): boolean
+        +isWaitlistFull(): boolean
+    }
+
+    class Enrollment {
+        -student: Student
+        -section: Section
+        -status: EnrollmentStatus
+        -grade: Optional<Grade>
+        +getStudent(): Student
+        +getSection(): Section
+        +getStatus(): EnrollmentStatus
+        +assignGrade(Grade): void
+        +hasGrade(): boolean
+    }
+
+    class Transcript {
+        -student: Student
+        -entries: List<TranscriptEntry>
+        +getEntries(): List<TranscriptEntry>
+        +getTotalCredits(): int
+        +getGpa(): double
+    }
+
+    class TranscriptEntry {
+        -section: Section
+        -grade: Grade
+        +getSection(): Section
+        +getGrade(): Grade
+        +getCredits(): int
+        +getQualityPoints(): double
+    }
+
+    class TimeSlot <<value>> {
+        -dayOfWeek: DayOfWeek
+        -start: LocalTime
+        -end: LocalTime
+        -room: String
+        +overlaps(TimeSlot): boolean
+        +compareTo(TimeSlot): int
+    }
+
+    enum EnrollmentStatus {
+        ENROLLED
+        DROPPED
+        WAITLISTED
+    }
+
+    enum Grade {
+        A, B, C, D, F, I, W
+        +getPoints(): double
+        +countsTowardsGpa(): boolean
+    }
+
+    interface Schedulable {
+        +getMeetingTimes(): List<TimeSlot>
+    }
+
+    interface Searchable {
+        +matchesKeyword(String): boolean
+    }
+
+    interface Gradable {
+        +assignGrade(Grade): void
+        +getGrade(): Optional<Grade>
+        +hasGrade(): boolean
+    }
 }
 
-' Concrete Classes
-class Student {
-    - String major
-    - int year
-    - Transcript transcript
-    - List<Enrollment> currentEnrollments
-    + String getMajor()
-    + int getYear()
-    + Transcript getTranscript()
-    + List<Enrollment> getCurrentEnrollments()
-    + void setMajor(String)
-    + void setYear(int)
-    + void addEnrollment(Enrollment)
-    + boolean removeEnrollment(Enrollment)
+' ==================== SERVICE ====================
+package "service" #AACCFF {
+    
+    interface RegistrationService {
+        +enrollStudentInSection(String, String): Result<Enrollment>
+        +dropStudentInSection(String, String): Result<Void>
+        +getCurrentSchedule(String, String): Result<List<Section>>
+        +getTranscript(String): Result<Transcript>
+        +adminOverrideEnroll(String, String, String, String): Result<Enrollment>
+    }
+
+    interface CatalogService {
+        +search(CourseQuery): Result<List<Course>>
+        +createCourse(String, String, int): Result<Course>
+        +createSection(String, Course, String, int): Result<Section>
+        +assignInstructor(String, String): Result<Void>
+        +getInstructorSections(String): Result<List<Section>>
+        +adminOverrideCapacity(String, int, String, String): Result<Void>
+    }
+
+    interface GradingService {
+        +postGrade(String, String, String, Grade): Result<Void>
+        +computeGPA(String): Result<Double>
+    }
+
+    class RegistrationServiceImpl {
+        -studentRepo: StudentRepository
+        -sectionRepo: SectionRepository
+        -enrollmentRepo: EnrollmentRepository
+        -validator: PrerequisiteValidator
+        -transcriptRepo: TranscriptRepository
+        -personRepo: PersonRepository
+        -logs: List<AdminOverrideLog>
+    }
+
+    class CatalogServiceImpl {
+        -courseRepo: CourseRepository
+        -sectionRepo: SectionRepository
+        -personRepo: PersonRepository
+        -logs: List<AdminOverrideLog>
+    }
+
+    class GradingServiceImpl {
+        -studentRepo: StudentRepository
+        -sectionRepo: SectionRepository
+        -enrollmentRepo: EnrollmentRepository
+        -transcriptRepo: TranscriptRepository
+    }
 }
 
-class Instructor {
-    - String department
-    - String officeNumber
-    - List<Section> assignedSections
-    + String getDepartment()
-    + String getOfficeNumber()
-    + List<Section> getAssignedSections()
-    + void setDepartment(String)
-    + void setOfficeNumber(String)
-    + void addAssignedSection(Section)
-    + boolean removeAssignedSection(Section)
+' ==================== VALIDATION ====================
+package "validation" #FFCCCC {
+    
+    class PrerequisiteValidator {
+        +hasCompletedPrerequisites(Transcript, Course): boolean
+        +hasCompletedPrerequisites(Transcript, Course, boolean): boolean
+    }
+
+    class CapacityValidator {
+        +hasCapacity(Section): boolean
+        +hasWaitlistCapacity(Section): boolean
+    }
+
+    class ScheduleConflictChecker {
+        +conflicts(Schedulable, Schedulable): boolean
+    }
 }
 
-class Admin {
+' ==================== REPOSITORY ====================
+package "repository" #CCFFCC {
+    
+    interface "Repository<T,ID>" as Repository {
+        +findById(ID): Optional<T>
+        +findAll(): List<T>
+        +save(T): T
+        +deleteById(ID): void
+    }
+
+    class CourseRepository {
+        -store: Map<String, Course>
+    }
+    class SectionRepository {
+        -store: Map<String, Section>
+    }
+    class StudentRepository {
+        -store: Map<String, Student>
+    }
+    class PersonRepository {
+        -store: Map<String, Person>
+    }
+    class EnrollmentRepository {
+        -store: Map<String, Enrollment>
+        +findByStudent(String): List<Enrollment>
+        +findByStudentAndSection(Student, Section): Optional<Enrollment>
+    }
+    class TranscriptRepository {
+        -store: Map<String, Transcript>
+    }
 }
 
-class Course {
-    - String code
-    - String title
-    - int credits
-    - List<String> prerequisites
-    + String getCode()
-    + String getTitle()
-    + int getCredits()
-    + List<String> getPrerequisites()
-    + void setTitle(String)
-    + void setCredits(int)
-    + void addPrerequisite(String)
-    + void removePrerequisite(String)
-    + boolean matchesKeyword(String)
+' ==================== UTIL ====================
+package "util" #FFFFCC {
+    
+    class "Result<T>" as Result {
+        -value: T
+        -error: String
+        +{static} ok(T): Result<T>
+        +{static} fail(String): Result<T>
+        +isOk(): boolean
+        +isFail(): boolean
+        +get(): T
+        +getError(): String
+    }
+
+    interface "Specification<T>" as Specification {
+        +isSatisfiedBy(T): boolean
+    }
+
+    class CourseQuery {
+        -code: String
+        -title: String
+        -minCredits: Integer
+        -maxCredits: Integer
+        -instructorName: String
+        -dayOfWeek: DayOfWeek
+        -startTime: LocalTime
+        -endTime: LocalTime
+        +isSatisfiedBy(Course): boolean
+    }
+
+    class AdminOverrideLog {
+        -adminId: String
+        -action: String
+        -targetId: String
+        -reason: String
+        -timestamp: LocalDateTime
+    }
 }
 
-class Section {
-    - String id
-    - Course course
-    - String term
-    - Instructor instructor
-    - int capacity
-    - int waitlistCapacity
-    - List<TimeSlot> meetingTimes
-    - List<Enrollment> roster
-    + String getId()
-    + Course getCourse()
-    + String getTerm()
-    + Instructor getInstructor()
-    + int getCapacity()
-    + List<TimeSlot> getMeetingTimes()
-    + List<Enrollment> getRoster()
-    + void setInstructor(Instructor)
-    + void setCapacity(int)
-    + boolean isFull()
-    + boolean isWaitlistFull()
-    + void addMeetingTime(TimeSlot)
-    + void addEnrollment(Enrollment)
+' ==================== CLI / GUI ====================
+package "ui" #EEDDFF {
+    class CommandLineInterface {
+        -registrationService: RegistrationService
+        -catalogService: CatalogService
+        -gradingService: GradingService
+        -currentUserId: String
+        -currentUserRole: String
+        +start(): void
+    }
+
+    class SimpleGui {
+        -registrationService: RegistrationService
+        -catalogService: CatalogService
+        -gradingService: GradingService
+        +start(): void
+    }
 }
 
-class Enrollment {
-    - Student student
-    - Section section
-    - EnrollmentStatus status
-    - Optional<Grade> grade
-    + Student getStudent()
-    + Section getSection()
-    + EnrollmentStatus getStatus()
-    + Optional<Grade> getGrade()
-    + void setStatus(EnrollmentStatus)
-    + void assignGrade(Grade)
-    + boolean hasGrade()
-}
-
-enum EnrollmentStatus {
-    ENROLLED
-    DROPPED
-    WAITLISTED
-}
-
-class Transcript {
-    - Student student
-    - List<TranscriptEntry> entries
-    + Student getStudent()
-    + List<TranscriptEntry> getEntries()
-    + void addEntry(TranscriptEntry)
-    + int getTotalCredits()
-    + double getTotalQualityPoints()
-    + double getGpa()
-}
-
-class TranscriptEntry {
-    - Section section
-    - Grade grade
-    + Section getSection()
-    + Grade getGrade()
-    + int getCredits()
-    + double getQualityPoints()
-}
-
-class TimeSlot {
-    - DayOfWeek dayOfWeek
-    - LocalTime start
-    - LocalTime end
-    - String room
-    + DayOfWeek getDayOfWeek()
-    + LocalTime getStart()
-    + LocalTime getEnd()
-    + String getRoom()
-    + boolean overlaps(TimeSlot)
-}
-
-enum Grade {
-    A
-    B
-    C
-    D
-    F
-    I
-    W
-    + double getPoints()
-    + boolean countsTowardsGpa()
-}
-
-' Interfaces
-interface Repository<T, ID> {
-    + Optional<T> findById(ID)
-    + List<T> findAll()
-    + T save(T)
-    + void deleteById(ID)
-}
-
-interface Schedulable {
-    + List<TimeSlot> getMeetingTimes()
-}
-
-interface Searchable {
-    + boolean matchesKeyword(String)
-}
-
-interface Gradable {
-    + void assignGrade(Grade)
-    + Optional<Grade> getGrade()
-    + boolean hasGrade()
-}
-
-interface Specification<T> {
-    + boolean isSatisfiedBy(T)
-}
-
-class CourseQuery {
-    - String code
-    - String title
-    - Integer minCredits
-    - Integer maxCredits
-    - String instructorName
-    - DayOfWeek dayOfWeek
-    - LocalTime startTime
-    - LocalTime endTime
-    + boolean isSatisfiedBy(Course)
-}
-
-' Inheritance Relationships
+' ==================== INHERITANCE ====================
 Person <|-- Student
 Person <|-- Instructor
 Person <|-- Admin
 
-' Implementation Relationships
+' ==================== INTERFACE IMPL ====================
 Section ..|> Schedulable
 Course ..|> Searchable
 Enrollment ..|> Gradable
+
 CourseQuery ..|> Specification
 
-' Associations
-Course "1" *-- "*" Section : contains
-Section "*" o-- "*" Enrollment : has
-Student "1" *-- "1" Transcript : has
-Transcript "1" *-- "*" TranscriptEntry : contains
-Section "*" o-- "*" TimeSlot : has
-Section "*" o-- "1" Instructor : assigned to
-Enrollment "*" o-- "1" Student : belongs to
-Enrollment "*" o-- "1" Section : enrolls in
-TranscriptEntry "*" o-- "1" Section : references
-Enrollment "*" o-- "1" Grade : receives
-TranscriptEntry "*" o-- "1" Grade : contains
-Enrollment "*" o-- "1" EnrollmentStatus : has
+RegistrationServiceImpl ..|> RegistrationService
+CatalogServiceImpl ..|> CatalogService
+GradingServiceImpl ..|> GradingService
 
-' Note: Repository interface is generic and implemented by various repository classes
-' (CourseRepository, StudentRepository, etc.) but not shown in detail here
+CourseRepository ..|> Repository
+SectionRepository ..|> Repository
+StudentRepository ..|> Repository
+PersonRepository ..|> Repository
+EnrollmentRepository ..|> Repository
+TranscriptRepository ..|> Repository
+
+' ==================== MODEL ASSOCIATIONS ====================
+Course "1" *-- "*" Section : contains
+Section "*" o-- "*" Enrollment : roster
+Section "*" o-- "*" TimeSlot : meetingTimes
+Section "*" o-- "0..1" Instructor : assignedTo
+Student "1" *-- "1" Transcript : has
+Transcript "1" *-- "*" TranscriptEntry : entries
+Enrollment "*" --> "1" Student : student
+Enrollment "*" --> "1" Section : section
+TranscriptEntry "*" --> "1" Section : section
+Enrollment "*" --> "0..1" Grade : grade
+TranscriptEntry "*" --> "1" Grade : grade
+Enrollment "*" --> "1" EnrollmentStatus : status
+
+' ==================== SERVICE DEPENDENCIES ====================
+RegistrationServiceImpl --> StudentRepository : uses
+RegistrationServiceImpl --> SectionRepository : uses
+RegistrationServiceImpl --> EnrollmentRepository : uses
+RegistrationServiceImpl --> TranscriptRepository : uses
+RegistrationServiceImpl --> PersonRepository : uses
+RegistrationServiceImpl --> PrerequisiteValidator : uses
+RegistrationServiceImpl --> AdminOverrideLog : logs
+
+CatalogServiceImpl --> CourseRepository : uses
+CatalogServiceImpl --> SectionRepository : uses
+CatalogServiceImpl --> PersonRepository : uses
+CatalogServiceImpl --> AdminOverrideLog : logs
+
+GradingServiceImpl --> StudentRepository : uses
+GradingServiceImpl --> SectionRepository : uses
+GradingServiceImpl --> EnrollmentRepository : uses
+GradingServiceImpl --> TranscriptRepository : uses
+
+' ==================== VALIDATION DEPENDENCIES ====================
+ScheduleConflictChecker ..> Schedulable : checks
+ScheduleConflictChecker ..> TimeSlot : uses
+PrerequisiteValidator ..> Transcript : validates
+PrerequisiteValidator ..> Course : validates
+CapacityValidator ..> Section : validates
+
+' ==================== UI DEPENDENCIES ====================
+CommandLineInterface --> RegistrationService : uses
+CommandLineInterface --> CatalogService : uses
+CommandLineInterface --> GradingService : uses
+
+SimpleGui --> RegistrationService : uses
+SimpleGui --> CatalogService : uses
+SimpleGui --> GradingService : uses
+
+' ==================== RESULT USAGE ====================
+RegistrationService ..> Result : returns
+CatalogService ..> Result : returns
+GradingService ..> Result : returns
+CatalogService ..> CourseQuery : uses
 
 @enduml
-
-
-
-
-
-
