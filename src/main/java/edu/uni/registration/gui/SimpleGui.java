@@ -207,10 +207,10 @@ public class SimpleGui extends JFrame {
         JPanel searchPanel = new JPanel(new BorderLayout());
         JPanel topSearch = new JPanel();
         JTextField searchField = new JTextField(20);
-        JButton searchBtn = new JButton("Search Title");
+        JButton searchBtn = new JButton("Search");
         JButton enrollBtn = new JButton("Enroll in Selected");
         
-        topSearch.add(new JLabel("Title:"));
+        topSearch.add(new JLabel("Keyword (Code/Title):"));
         topSearch.add(searchField);
         topSearch.add(searchBtn);
         
@@ -219,14 +219,28 @@ public class SimpleGui extends JFrame {
         searchTable = new JTable(searchModel);
         
         searchBtn.addActionListener(e -> {
-            CourseQuery q = new CourseQuery();
-            q.setTitle(searchField.getText());
+            String keyword = searchField.getText().trim();
+            CourseQuery q = null;
+            if (!keyword.isEmpty()) {
+                q = new CourseQuery();
+                // Search in both code and title (OR logic when same value)
+                q.setCode(keyword);
+                q.setTitle(keyword);
+            }
+            // If keyword is empty, q remains null and all courses are returned
             Result<List<Course>> res = catalogService.search(q);
             searchModel.setRowCount(0);
             if (res.isOk()) {
-                for (Course c : res.get()) {
-                    searchModel.addRow(new Object[]{c.getCode(), c.getTitle(), c.getCredits(), c.getPrerequisites()});
+                List<Course> results = res.get();
+                if (results.isEmpty()) {
+                    JOptionPane.showMessageDialog(this, "No courses found matching your search.");
+                } else {
+                    for (Course c : results) {
+                        searchModel.addRow(new Object[]{c.getCode(), c.getTitle(), c.getCredits(), c.getPrerequisites()});
+                    }
                 }
+            } else {
+                JOptionPane.showMessageDialog(this, "Search error: " + res.getError());
             }
         });
         
@@ -643,8 +657,14 @@ public class SimpleGui extends JFrame {
             );
             if (selectedDisplay == null) return;
             
-            String selectedId = selectedDisplay.substring(0, selectedDisplay.indexOf(" ["));
-            chosen = sections.stream().filter(s -> s.getId().equals(selectedId)).findFirst().orElse(null);
+            // Find the section by matching the selected display string with our options
+            chosen = null;
+            for (int i = 0; i < displayOptions.length; i++) {
+                if (displayOptions[i].equals(selectedDisplay)) {
+                    chosen = sections.get(i);
+                    break;
+                }
+            }
         }
 
         if (chosen == null) {
